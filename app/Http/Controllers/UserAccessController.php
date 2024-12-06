@@ -28,10 +28,11 @@ class UserAccessController extends Controller
                     'phone' => $user->phone,
                     'role_id' => $user->role_id,
                     'role' => $user->role,
-                    'roles' => $user->roles,
+                    'rol' => $user->roles,
                     'sucursal_id' => $user->sucursal_id,
                     'gender' => $user->gender,
-                    'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : NULL,
+                    'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : 'https://cdn-icons-png.flaticon.com/512/18269/18269639.png',
+                    'created_format_at' => $user->created_at->format('Y-m-d h:i A')
                 ];
             }),
         ]);
@@ -72,10 +73,11 @@ class UserAccessController extends Controller
                 'phone' => $user->phone,
                 'role_id' => $user->role_id,
                 'role' => $user->role,
-                'roles' => $user->roles,
+                'rol' => $user->roles,
                 'sucursal_id' => $user->sucursal_id,
                 'gender' => $user->gender,
                 'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : NULL,
+                'created_format_at' => $user->created_at->format('Y-m-d h:i A')
             ]
         ]);
     }
@@ -143,6 +145,7 @@ class UserAccessController extends Controller
                 'sucursal_id' => $user->sucursal_id,
                 'gender' => $user->gender,
                 'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : NULL,
+                'created_format_at' => $user->created_at->format('Y-m-d h:i A')
             ]
         ]);
     }

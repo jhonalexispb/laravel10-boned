@@ -42,5 +42,6 @@ Route::group([
  
 ], function ($router) {
     Route::resource("roles",RolPermissionController::class);
+    Route::post('/users/{id}', [UserAccessController::class, 'update']);
     Route::resource("users",UserAccessController::class);
 });
