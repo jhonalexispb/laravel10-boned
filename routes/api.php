@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Configuration\SucursaleController;
 use App\Http\Controllers\UserAccessController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -45,4 +46,6 @@ Route::group([
     Route::post('/users/{id}', [UserAccessController::class, 'update']);
     Route::get("users/config", [UserAccessController::class, 'config']);
     Route::resource("users",UserAccessController::class);
+
+    Route::resource("sucursales",SucursaleController::class);
 });

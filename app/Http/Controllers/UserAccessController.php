@@ -25,12 +25,14 @@ class UserAccessController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'surname' => $user->surname,
+                    'full_name' => $user->name.' '.$user->surname,
                     'phone' => $user->phone,
                     'role_id' => $user->role_id,
                     'role' => $user->role,
                     'rol' => $user->roles,
                     'sucursal_id' => $user->sucursal_id,
                     'gender' => $user->gender,
+                    'n_document' => $user->n_document,
                     'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : 'https://cdn-icons-png.flaticon.com/512/18269/18269639.png',
                     'created_format_at' => $user->created_at->format('Y-m-d h:i A')
                 ];
@@ -76,13 +78,15 @@ class UserAccessController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'surname' => $user->surname,
+                'full_name' => $user->name.' '.$user->surname,
                 'phone' => $user->phone,
                 'role_id' => $user->role_id,
                 'role' => $user->role,
                 'rol' => $user->roles,
                 'sucursal_id' => $user->sucursal_id,
                 'gender' => $user->gender,
-                'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : NULL,
+                'n_document' => $user->n_document,
+                'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : 'https://cdn-icons-png.flaticon.com/512/18269/18269639.png',
                 'created_format_at' => $user->created_at->format('Y-m-d h:i A')
             ]
         ]);
@@ -144,13 +148,15 @@ class UserAccessController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'surname' => $user->surname,
+                'full_name' => $user->name.' '.$user->surname,
                 'phone' => $user->phone,
                 'role_id' => $user->role_id,
                 'role' => $user->role,
                 'roles' => $user->roles,
                 'sucursal_id' => $user->sucursal_id,
                 'gender' => $user->gender,
-                'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : NULL,
+                'n_document' => $user->n_document,
+                'avatar' => $user->avatar ? env("APP_URL")."storage/".$user->avatar : 'https://cdn-icons-png.flaticon.com/512/18269/18269639.png',
                 'created_format_at' => $user->created_at->format('Y-m-d h:i A')
             ]
         ]);
@@ -165,6 +171,8 @@ class UserAccessController extends Controller
         if($user->avatar){
             Storage::delete($user->avatar);
         }
+
+        $user->delete();
 
         return response()->json([
             "message" => 200
