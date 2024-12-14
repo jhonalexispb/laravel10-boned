@@ -30,38 +30,7 @@ class methodPaymentController extends Controller
             })
         ]);
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $is_exist_method = MethodPayment::where("nombre", $request->name)->first();
-        if($is_exist_method){
-            return response()->json([
-                "message" => 403,
-                "message_text" => "El nombre del método ya existe"
-            ]);
-        }
-
-        if($request->hasFile("image")){
-            $path = Storage::putFile("methods_payents",$request->file("image"));
-            $request->request->add(["image" => $path]);
-        }
-
-        $method_payment = MethodPayment::create($request->all());
-        return response()->json([
-            "message" => 200,
-            "method_payment" => [
-                "id" => $method_payment->id,
-                "name" => $method_payment->name,
-                "image" => $method_payment->image ? env("APP_URL")."storage/".$method_payment->image : null,
-                "state" => $method_payment->state,
-                "created_at" => $method_payment->created_at->format('Y-m-d h:i A'),
-            ]
-        ]);
-
-    }
+    
 
     /**
      * Display the specified resource.
@@ -82,7 +51,7 @@ class methodPaymentController extends Controller
         if($is_exist_method){
             return response()->json([
                 "message" => 403,
-                "message_text" => "El nombre del método ya existe"
+                "message_text" => "el nombre del método ya existe"
             ]);
         }
 
@@ -106,23 +75,6 @@ class methodPaymentController extends Controller
                 "state" => $method->state,
                 "created_at" => $method->created_at->format('Y-m-d h:i A'),
             ]
-        ]);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $method = MethodPayment::findOrFail($id);
-        if($method->image){
-            Storage::delete($method->image);
-        }
-
-        $method->delete();
-
-        return response()->json([
-            "message" => 200
         ]);
     }
 }

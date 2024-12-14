@@ -53,5 +53,5 @@ Route::group([
     Route::resource("sucursales",SucursaleController::class);
     Route::resource("warehouses",WarehouseController::class);
     Route::resource("lugar_entrega",lugarEntregaController::class);
-    Route::resource("metodo_pago",methodPaymentController::class);
+    Route::resource("metodo_pago",methodPaymentController::class)->only(['index', 'show', 'update']);
 });
