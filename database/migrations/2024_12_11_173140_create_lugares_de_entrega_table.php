@@ -11,16 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('warehouses', function(Blueprint $table){
+        Schema::create('lugares_de_entrega', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('address')->nullable();
+            $table->string('address');
             $table->boolean('state')->default(1);
-
-            $table->unsignedBigInteger('sucursale_id')->nullable(); // Esto define la columna que será la clave foránea
-            $table->foreign('sucursale_id')->references('id')->on('sucursales')->onDelete('restrict'); // Define la relación con la tabla 'sucursales'
-            
-            $table->timestamps(); 
+            $table->point('destination_coordinates')->nullable();
+            $table->timestamps();
             $table->softDeletes();
         });
     }
@@ -30,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('warehouses');
+        Schema::dropIfExists('lugares_de_entrega');
     }
 };

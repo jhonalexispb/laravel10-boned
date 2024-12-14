@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\configuration\lugarEntregaController;
+use App\Http\Controllers\configuration\methodPaymentController;
 use App\Http\Controllers\Configuration\SucursaleController;
+use App\Http\Controllers\Configuration\WarehouseController;
 use App\Http\Controllers\UserAccessController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -48,4 +51,7 @@ Route::group([
     Route::resource("users",UserAccessController::class);
 
     Route::resource("sucursales",SucursaleController::class);
+    Route::resource("warehouses",WarehouseController::class);
+    Route::resource("lugar_entrega",lugarEntregaController::class);
+    Route::resource("metodo_pago",methodPaymentController::class);
 });

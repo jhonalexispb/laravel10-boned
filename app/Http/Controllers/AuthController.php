@@ -112,6 +112,7 @@ class AuthController extends Controller
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => [
+                "name" => auth("api")->user()->name,
                 "full_name" => auth("api")->user()->name.' '.auth("api")->user()->surname,
                 "email" => auth("api")->user()->email,
                 "avatar" => auth('api')->user()->avatar ? env("APP_URL")."storage/".auth('api')->user()->avatar : 'https://cdn-icons-png.flaticon.com/512/18269/18269639.png',
