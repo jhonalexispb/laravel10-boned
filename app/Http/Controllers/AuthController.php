@@ -113,6 +113,7 @@ class AuthController extends Controller
             'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => [
                 "name" => auth("api")->user()->name,
+                "gender" => auth("api")->user()->gender,
                 "full_name" => auth("api")->user()->name.' '.auth("api")->user()->surname,
                 "email" => auth("api")->user()->email,
                 "avatar" => auth('api')->user()->avatar ? env("APP_URL")."storage/".auth('api')->user()->avatar : 'https://cdn-icons-png.flaticon.com/512/18269/18269639.png',
