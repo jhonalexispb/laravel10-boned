@@ -7,7 +7,7 @@ use App\Models\configuration\Bank as ConfigurationBank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
-class bank extends Controller
+class bankController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -44,8 +44,8 @@ class bank extends Controller
             ]);
         }
 
-        if($request->hasFile("image")){
-            $path = Storage::putFile("bank",$request->file("image"));
+        if($request->hasFile("imagebank")){
+            $path = Storage::putFile("bank",$request->file("imagebank"));
             $request->request->add(["image" => $path]);
         }
 
@@ -56,7 +56,7 @@ class bank extends Controller
                 "id" => $bank->id,
                 "name" => $bank->name,
                 "image" => $bank->image ? env("APP_URL")."storage/".$bank->image : null,
-                "state" => $bank->state,
+                "state" => $bank->state ?? 1,
                 "created_at" => $bank->created_at->format('Y-m-d h:i A'),
             ]
         ]);
@@ -87,11 +87,11 @@ class bank extends Controller
 
         $b = ConfigurationBank::findOrFail($id);
 
-        if($request->hasFile("image")){
+        if($request->hasFile("imagebank")){
             if($b->image){
                 Storage::delete($b->image);
             }
-            $path = Storage::putFile("bank",$request->file("image"));
+            $path = Storage::putFile("bank",$request->file("imagebank"));
             $request->request->add(["image" => $path]);
         }
 

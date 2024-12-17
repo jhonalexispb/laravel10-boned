@@ -111,7 +111,7 @@ class UserAccessController extends Controller
         if($USER_EXIST){
             return response() -> json([
                 "message" => 403,
-                "message_text" => "El usuario ya existe"
+                "message_text" => "el usuario ya existe"
             ]);
         }
 

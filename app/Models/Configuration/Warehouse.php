@@ -29,6 +29,6 @@ class Warehouse extends Model
     }
 
     public function sucursale(){
-        return $this->belongsTo(Sucursale::class,"sucursale_id")->onDelete('restrict');
+        return $this->belongsTo(Sucursale::class,"sucursale_id");
     }
 }

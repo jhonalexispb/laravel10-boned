@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bank', function (Blueprint $table) {
+        Schema::create('table_comprobante_pago', function (Blueprint $table) {
             $table->id();
-            $table->string('name',50);
-            $table->string('image')->nullable();
-            $table->boolean('state')->default(1);
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 
@@ -26,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bank');
+        Schema::dropIfExists('table_comprobante_pago');
     }
 };

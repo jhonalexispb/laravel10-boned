@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\configuration\bankController;
 use App\Http\Controllers\configuration\lugarEntregaController;
 use App\Http\Controllers\configuration\methodPaymentController;
 use App\Http\Controllers\Configuration\SucursaleController;
@@ -48,10 +49,12 @@ Route::group([
     Route::resource("roles",RolPermissionController::class);
     Route::post('/users/{id}', [UserAccessController::class, 'update']);
     Route::get("users/config", [UserAccessController::class, 'config']);
-    Route::resource("users",UserAccessController::class);
+    Route::resource("users",UserAccessController::class)->except(['update']);
 
     Route::resource("sucursales",SucursaleController::class);
     Route::resource("warehouses",WarehouseController::class);
     Route::resource("lugar_entrega",lugarEntregaController::class);
     Route::resource("metodo_pago",methodPaymentController::class)->only(['index', 'show', 'update']);
+    Route::post('/banco/{id}', [bankController::class, 'update']);
+    Route::resource("banco",bankController::class)->except(['update']);
 });
