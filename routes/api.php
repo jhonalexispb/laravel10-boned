@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ComprobantePagoController;
 use App\Http\Controllers\configuration\bankController;
 use App\Http\Controllers\configuration\lugarEntregaController;
 use App\Http\Controllers\configuration\methodPaymentController;
@@ -46,15 +47,16 @@ Route::group([
     //'middleware' => ['auth:api','permission:publish articles|edit articles'],
  
 ], function ($router) {
-    Route::resource("roles",RolPermissionController::class);
+    Route::resource("roles",RolPermissionController::class)->except(['create','edit']);
     Route::post('/users/{id}', [UserAccessController::class, 'update']);
     Route::get("users/config", [UserAccessController::class, 'config']);
-    Route::resource("users",UserAccessController::class)->except(['update']);
+    Route::resource("users",UserAccessController::class)->except(['update','create','edit']);
 
-    Route::resource("sucursales",SucursaleController::class);
-    Route::resource("warehouses",WarehouseController::class);
-    Route::resource("lugar_entrega",lugarEntregaController::class);
+    Route::resource("sucursales",SucursaleController::class)->except(['create','edit']);
+    Route::resource("warehouses",WarehouseController::class)->except(['create','edit']);
+    Route::resource("lugar_entrega",lugarEntregaController::class)->except(['create','edit']);
     Route::resource("metodo_pago",methodPaymentController::class)->only(['index', 'show', 'update']);
     Route::post('/banco/{id}', [bankController::class, 'update']);
-    Route::resource("banco",bankController::class)->except(['update']);
+    Route::resource("banco",bankController::class)->except(['update','create','edit']);
+    Route::resource("comprobante",ComprobantePagoController::class)->except(['create','edit']);
 });
