@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\configuration;
 
-use App\Models\ComprobantePago;
+use App\Http\Controllers\Controller;
+use App\Models\Configuration\ComprobantePago;
 use Illuminate\Http\Request;
 
 class ComprobantePagoController extends Controller

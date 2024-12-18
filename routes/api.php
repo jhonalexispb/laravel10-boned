@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ComprobantePagoController;
+use App\Http\Controllers\configuration\ComprobantePagoController;
 use App\Http\Controllers\configuration\bankController;
+use App\Http\Controllers\Configuration\DepartamentoController;
 use App\Http\Controllers\configuration\lugarEntregaController;
 use App\Http\Controllers\configuration\methodPaymentController;
 use App\Http\Controllers\Configuration\SucursaleController;
@@ -56,7 +57,16 @@ Route::group([
     Route::resource("warehouses",WarehouseController::class)->except(['create','edit']);
     Route::resource("lugar_entrega",lugarEntregaController::class)->except(['create','edit']);
     Route::resource("metodo_pago",methodPaymentController::class)->only(['index', 'show', 'update']);
+
+    //banco
     Route::post('/banco/{id}', [bankController::class, 'update']);
     Route::resource("banco",bankController::class)->except(['update','create','edit']);
+
     Route::resource("comprobante",ComprobantePagoController::class)->except(['create','edit']);
+
+    //departamentos
+    Route::post('/departamentos/{id}', [DepartamentoController::class, 'update']);
+    Route::resource("departamentos",DepartamentoController::class)->except(['update','create','edit']);
+
+
 });
