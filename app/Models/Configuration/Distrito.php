@@ -7,22 +7,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Departamento extends Model
+class Distrito extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'departamento';
+    protected $table = 'distritos';
 
     protected $fillable = [
         "name",
         "image",
         "state",
+        "idprovincia"
     ];
-
-    public function provincias()
-    {
-        return $this->hasMany(Provincia::class, 'iddepartamento');
-    }
 
     public function setCreatedAtAttribute($value){
         date_default_timezone_set("America/Lima");
@@ -32,5 +28,9 @@ class Departamento extends Model
     public function setUpdatedAtAttribute($value){
         date_default_timezone_set("America/Lima");
         $this->attributes["updated_at"] = Carbon::now();
+    }
+
+    public function provincia(){
+        return $this->belongsTo(Provincia::class, 'idprovincia');
     }
 }

@@ -16,7 +16,7 @@ class DepartamentoController extends Controller
     {
         $search = $request->get('search');
 
-        $departamento = Departamento::where("name","like","%".$search."%")->orderBy("id","desc")->paginate(25);
+        $departamento = Departamento::where("name","like","%".$search."%")->orderBy("id","asc")->paginate(25);
         return response()->json([
             "total" => $departamento->total(),
             "departamento" => $departamento->map(function($d){
@@ -36,11 +36,19 @@ class DepartamentoController extends Controller
      */
     public function store(Request $request)
     {
-        $DEPARTMENT_EXIST = Departamento::where('name',$request->email)->first();
+        $DEPARTMENT_EXIST = Departamento::withTrashed()->where('name',$request->name)->first();
         if($DEPARTMENT_EXIST){
+            if ($DEPARTMENT_EXIST->deleted_at) {
+                // Si el departamento está eliminado lógicamente, puedes restaurarlo o actualizarlo
+                return response() -> json([
+                    "message" => 409,
+                    "message_text" => "el departamento ".$DEPARTMENT_EXIST->name." ya existe pero se encuentra eliminado, ¿Deseas restaurarlo?",
+                    "departamento" => $DEPARTMENT_EXIST->id
+                ]);
+            }
             return response() -> json([
                 "message" => 403,
-                "message_text" => "El departamento ya existe"
+                "message_text" => "el departamento ".$DEPARTMENT_EXIST->name." ya existe"
             ]);
         }
 
@@ -65,7 +73,7 @@ class DepartamentoController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Departamento $departamento)
+    public function show(string $departamento)
     {
         //
     }
@@ -73,17 +81,30 @@ class DepartamentoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Departamento $departamento)
+    public function update(Request $request, string $departamento)
     {
-        $DEPARTMENT_EXIST = Departamento::where('name',$request->email)->first();
+        $DEPARTMENT_EXIST = Departamento::withTrashed()->where('name',$request->name)
+                                        ->where('id','<>', $departamento)
+                                        ->first();
         if($DEPARTMENT_EXIST){
+            if ($DEPARTMENT_EXIST->deleted_at) {
+                // Si el departamento está eliminado lógicamente, puedes restaurarlo o actualizarlo
+                return response() -> json([
+                    "message" => 409,
+                    "message_text" => "el departamento ".$DEPARTMENT_EXIST->name." ya existe pero se encuentra eliminado, ¿Deseas restaurarlo?",
+                    "departamento" => $DEPARTMENT_EXIST->id
+                ]);
+            }
             return response() -> json([
                 "message" => 403,
-                "message_text" => "El departamento ya existe"
+                "message_text" => "El departamento ".$DEPARTMENT_EXIST->name." ya existe"
             ]);
         }
 
         if($request->hasFile("image_department")){
+            if($request->image){
+                Storage::delete($request->image);
+            }
             $path = Storage::putFile("departments",$request->file("image_department"));
             $request->request->add(["image" => $path]);
         }
@@ -105,7 +126,7 @@ class DepartamentoController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Departamento $departamento)
+    public function destroy(string $departamento)
     {
         $d = Departamento::findOrFail($departamento);
         if($d->image){
@@ -115,6 +136,34 @@ class DepartamentoController extends Controller
 
         return response()->json([
             "message" => 200
+        ]);
+    }
+
+    public function restaurar(int $departamento)
+    {
+        // Buscar el departamento eliminado (soft deleted) por su ID
+        $departamento = Departamento::withTrashed()->findOrFail($departamento);
+
+        // Restaurar el departamento si está eliminado
+        if ($departamento->trashed()) {
+            $departamento->restore();
+            return response()->json([
+                'message' => 200,
+                "message_text" => "el departamento ".$departamento->name." fue restaurado de manera satisfactoria",
+                "departamento_restaurado" => [
+                    "id" => $departamento->id,
+                    "name" => $departamento->name,
+                    "state" => $departamento->state,
+                    "image" => $departamento->image ? env("APP_URL")."storage/".$departamento->image : '',
+                    "created_at" => $departamento->created_at->format("Y-m-d h:i A")
+                ]
+            ]);
+        }
+
+        // Si el departamento no estaba eliminado
+        return response()->json([
+            'message' => 403,
+            'message_text' => 'el departamento no estaba eliminado'
         ]);
     }
 }

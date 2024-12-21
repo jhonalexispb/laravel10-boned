@@ -4,8 +4,10 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\configuration\ComprobantePagoController;
 use App\Http\Controllers\configuration\bankController;
 use App\Http\Controllers\Configuration\DepartamentoController;
+use App\Http\Controllers\Configuration\DistritoController;
 use App\Http\Controllers\configuration\lugarEntregaController;
 use App\Http\Controllers\configuration\methodPaymentController;
+use App\Http\Controllers\Configuration\ProvinciaController;
 use App\Http\Controllers\Configuration\SucursaleController;
 use App\Http\Controllers\Configuration\WarehouseController;
 use App\Http\Controllers\UserAccessController;
@@ -66,7 +68,18 @@ Route::group([
 
     //departamentos
     Route::post('/departamentos/{id}', [DepartamentoController::class, 'update']);
+    Route::put('/departamentos/restaurar/{id}', [DepartamentoController::class, 'restaurar']);
     Route::resource("departamentos",DepartamentoController::class)->except(['update','create','edit']);
+
+    //provincias
+    Route::post('/provincias/{id}', [ProvinciaController::class, 'update']);
+    Route::put('/provincias/restaurar/{id}', [ProvinciaController::class, 'restaurar']);
+    Route::resource("provincias",ProvinciaController::class)->except(['update','create','edit']);
+
+    //distritos
+    Route::post('/distritos/{id}', [DistritoController::class, 'update']);
+    Route::put('/distritos/restaurar/{id}', [DistritoController::class, 'restaurar']);
+    Route::resource("distritos",DistritoController::class)->except(['update','create','edit']);
 
 
 });

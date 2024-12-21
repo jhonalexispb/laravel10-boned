@@ -7,21 +7,27 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Departamento extends Model
+class Provincia extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $table = 'departamento';
+    protected $table = 'provincia';
 
     protected $fillable = [
         "name",
         "image",
         "state",
+        "iddepartamento",
     ];
 
-    public function provincias()
+    public function departamento()
     {
-        return $this->hasMany(Provincia::class, 'iddepartamento');
+        return $this->belongsTo(Departamento::class, 'iddepartamento');
+    }
+
+    public function distrito()
+    {
+        return $this->hasMany(Distrito::class, 'idprovincia');
     }
 
     public function setCreatedAtAttribute($value){
