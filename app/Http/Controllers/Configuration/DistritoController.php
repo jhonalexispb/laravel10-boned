@@ -31,10 +31,10 @@ class DistritoController extends Controller
                     "departamento_name" => $d->provincia && $d->provincia->departamento ? $d->provincia->departamento->name : null,
                 ];
             }),
-            "provincias" => $provincia->map(function($d) {
+            "provincias" => $provincia->map(function($p) {
                 return [
-                    "id" => $d->id,
-                    "name" => $d->name,
+                    "id" => $p->id,
+                    "provincia_department_name" => $p->name ." / ". $p->departamento->name,
                 ];
             })
         ]);
