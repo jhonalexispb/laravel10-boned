@@ -8,6 +8,7 @@ use App\Http\Controllers\Configuration\DepartamentoController;
 use App\Http\Controllers\Configuration\DistritoController;
 use App\Http\Controllers\configuration\lugarEntregaController;
 use App\Http\Controllers\configuration\methodPaymentController;
+use App\Http\Controllers\Configuration\ProveedorController;
 use App\Http\Controllers\Configuration\ProvinciaController;
 use App\Http\Controllers\Configuration\RepresentanteProveedorController;
 use App\Http\Controllers\Configuration\SucursaleController;
@@ -92,5 +93,6 @@ Route::group([
     Route::put('/representante_proveedor/restaurar/{id}', [RepresentanteProveedorController::class, 'restaurar']);
     Route::resource("representante_proveedor",RepresentanteProveedorController::class)->except(['create','edit']);
 
-
+    //proveedor
+    Route::resource("proveedor",ProveedorController::class)->except(['create','edit']);
 });

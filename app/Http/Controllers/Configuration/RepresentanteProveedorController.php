@@ -82,7 +82,15 @@ class RepresentanteProveedorController extends Controller
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
-    {
+    {   
+        $request->validate([
+            'celular' => 'nullable|numeric|digits:9',  // Celular opcional, debe ser numérico y no mayor de 9 dígitos
+        ], [
+            'celular.numeric' => 'el número de celular debe ser numérico.',
+            'celular.digits' => 'el número de celular debe tener 9 dígitos.',
+        ]);
+    
+
         $REPRESENTANTE_EXIST = RepresentanteProveedor::withTrashed()
                             ->where('email',$request->email)
                             ->where('id','<>', $id)
