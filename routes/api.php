@@ -94,5 +94,6 @@ Route::group([
     Route::resource("representante_proveedor",RepresentanteProveedorController::class)->except(['create','edit']);
 
     //proveedor
+    Route::put('/proveedor/restaurar/{id}', [ProveedorController::class, 'restaurar']);
     Route::resource("proveedor",ProveedorController::class)->except(['create','edit']);
 });

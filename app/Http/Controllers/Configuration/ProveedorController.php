@@ -34,7 +34,7 @@ class ProveedorController extends Controller
                 ? $proveedor->ubicacion->name . " / " .
                   $proveedor->ubicacion->provincia->name . " / " .
                   $proveedor->ubicacion->provincia->departamento->name
-                : 'Sin ubicación'; // Si no tiene ubicación asociada
+                : null; // Si no tiene ubicación asociada
 
                 return [
                     "id" => $proveedor->id,
@@ -46,6 +46,7 @@ class ProveedorController extends Controller
                     "email" => $proveedor->email,
                     "created_at" => $proveedor->created_at->format("Y-m-d h:i A"),
                     "ubicacion" => $ubicacionCompleta,
+                    "idrepresentante" => $proveedor->idrepresentante,
                     "representante" => $proveedor->idrepresentante ? $proveedor->representante->name : 'Sin representante',
                     "representante_celular" => $proveedor->idrepresentante ? $proveedor->representante->celular : '',
                 ];
@@ -98,7 +99,7 @@ class ProveedorController extends Controller
         ? $distrito->name . " / " . 
           $distrito->provincia->name . " / " . 
           $distrito->provincia->departamento->name
-        : 'Sin ubicación';
+        : null;
 
         return response()->json([
             "message" => 200,
@@ -112,6 +113,7 @@ class ProveedorController extends Controller
                 "email" => $proveedor->email,
                 "created_at" => $proveedor->created_at->format("Y-m-d h:i A"),
                 "ubicacion" => $ubicacionCompleta,
+                "idrepresentante" => $proveedor->idrepresentante,
                 "representante" => $proveedor->idrepresentante ? $proveedor->representante->name : 'Sin representante',
                 "representante_celular" => $proveedor->representante->celular,
             ]
@@ -133,6 +135,7 @@ class ProveedorController extends Controller
     {
         $PROVEEDOR_EXIST = Proveedor::withTrashed()
                             ->where('name',$request->name)
+                            ->where('id','<>', $id)
                             ->first();
         if($PROVEEDOR_EXIST){
             if ($PROVEEDOR_EXIST->deleted_at) {
@@ -158,7 +161,7 @@ class ProveedorController extends Controller
         ? $distrito->name . " / " . 
           $distrito->provincia->name . " / " . 
           $distrito->provincia->departamento->name
-        : 'Sin ubicación';
+        : null;
 
         return response()->json([
             "message" => 200,
@@ -166,12 +169,13 @@ class ProveedorController extends Controller
                 "id" => $proveedor->id,
                 "razonSocial" => $proveedor->razonSocial,
                 "name" => $proveedor->name,
-                "address" => $proveedor->address ?? 'Sin direccion',
-                "state" => $proveedor->state ?? 1,
+                "address" => $proveedor->address,
+                "state" => $proveedor->state,
                 "iddistrito" => $proveedor->iddistrito,
                 "email" => $proveedor->email,
                 "created_at" => $proveedor->created_at->format("Y-m-d h:i A"),
                 "ubicacion" => $ubicacionCompleta,
+                "idrepresentante" => $proveedor->idrepresentante,
                 "representante" => $proveedor->idrepresentante ? $proveedor->representante->name : 'Sin representante',
                 "representante_celular" => $proveedor->representante->celular,
             ]
@@ -215,12 +219,13 @@ class ProveedorController extends Controller
                     "id" => $proveedor->id,
                     "razonSocial" => $proveedor->razonSocial,
                     "name" => $proveedor->name,
-                    "address" => $proveedor->address ?? 'Sin direccion',
+                    "address" => $proveedor->address,
                     "state" => $proveedor->state ?? 1,
                     "iddistrito" => $proveedor->iddistrito,
                     "email" => $proveedor->email,
                     "created_at" => $proveedor->created_at->format("Y-m-d h:i A"),
                     "ubicacion" => $ubicacionCompleta,
+                    "idrepresentante" => $proveedor->idrepresentante,
                     "representante" => $proveedor->idrepresentante ? $proveedor->representante->name : 'Sin representante',
                     "representante_celular" => $proveedor->representante->celular,
                 ]
