@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class LaboratorioController extends Controller
 {
@@ -16,9 +17,10 @@ class LaboratorioController extends Controller
     {
         $search = $request->get('search');
 
-        $proveedor = Proveedor::all();
-
-        $laboratorio = Laboratorio::where("name","like","%".$search."%")->orderBy("id","desc")->paginate(25);
+        $laboratorio = Laboratorio::where("name","like","%".$search."%")
+                                    ->orderBy("id","desc")
+                                    ->with('proveedores')
+                                    ->paginate(25);
         return response()->json([
             "total" => $laboratorio->total(),
             "laboratorio" => $laboratorio->map(function($d){
@@ -27,11 +29,18 @@ class LaboratorioController extends Controller
                     "name" => $d->name,
                     "state" => $d->state,
                     "image" => $d->image ? env("APP_URL")."storage/".$d->image : '',
+                    "margen_minimo" => $d->margen_minimo,
                     "color" => $d->color,
                     "created_at" => $d->created_at->format("Y-m-d h:i A"),
+                    "proveedor_laboratorio" => $d->proveedores->map(function ($p) {
+                        return [
+                            "id" => $p->id,
+                            "name" => $p->name,
+                        ];
+                    }),
                 ];
             }),
-            "proveedores" => $proveedor->map(function($p) {
+            "proveedores" => Proveedor::all()->map(function ($p) {
                 return [
                     "id" => $p->id,
                     "name" => $p->name,
@@ -44,8 +53,65 @@ class LaboratorioController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        //
+    {   
+        $proveedores = json_decode($request->input('proveedores'), true);
+        $request->merge(['proveedores' => $proveedores]);
+        $request->validate([
+            'name' => 'required|string|max:255|unique:laboratorio,name',
+            'image_laboratorio' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'margen_minimo' => 'required|numeric|regex:/^\d+(\.\d{1,2})?$/',
+            'color' => 'required|string|max:7',
+            'proveedores' => 'required|array|min:1',  // Validamos que proveedores sea un array y contenga al menos un proveedor
+            'proveedores.*' => 'exists:proveedor,id', // Verifica que cada ID de proveedor sea válido y exista en la tabla `proveedor`
+        ]);
+
+        $LABORATORIO_EXIST = Laboratorio::withTrashed()
+                            ->where('name',$request->name)
+                            ->first();
+        if($LABORATORIO_EXIST){
+            if ($LABORATORIO_EXIST->deleted_at) {
+                // Si el departamento está eliminado lógicamente, puedes restaurarlo o actualizarlo
+                return response() -> json([
+                    "message" => 409,
+                    "message_text" => "el laboratorio ".$LABORATORIO_EXIST->name." ya existe pero se encuentra eliminado, ¿Deseas restaurarlo?",
+                    "distrito" => $LABORATORIO_EXIST->id
+                ]);
+            }
+            return response() -> json([
+                "message" => 403,
+                "message_text" => "el laboratorio ".$LABORATORIO_EXIST->name." ya existe"
+            ]);
+        }
+
+        if($request->hasFile("image_laboratorio")){
+            $path = Storage::putFile("laboratorios",$request->file("image_laboratorio"));
+            $request->request->add(["image" => $path]);
+        }
+
+        $laboratorio = Laboratorio::create(  $request->all());
+
+        $laboratorio->proveedores()->attach($proveedores);
+
+        $laboratorio->load('proveedores');
+
+        return response()->json([
+            "message" => 200,
+            "laboratorio" => [
+                "id" => $laboratorio->id,
+                "name" => $laboratorio->name,
+                "state" => $laboratorio->state ?? 1,
+                "image" => $laboratorio->image ? env("APP_URL")."storage/".$laboratorio->image : '',
+                "margen_minimo" => $laboratorio->margen_minimo,
+                "color" => $laboratorio->color,
+                "created_at" => $laboratorio->created_at->format("Y-m-d h:i A"),
+                "proveedor_laboratorio" => $laboratorio->proveedores->map(function ($p) {
+                    return [
+                        "id" => $p->id,
+                        "name" => $p->name,
+                    ];
+                }),
+            ],
+        ]);
     }
 
     /**

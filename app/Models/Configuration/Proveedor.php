@@ -51,4 +51,9 @@ class Proveedor extends Model
     public function representante(){
         return $this->belongsTo(RepresentanteProveedor::class, 'idrepresentante');
     }
+
+    public function laboratorios()
+    {
+        return $this->belongsToMany(Laboratorio::class, 'laboratorio_proveedor', 'proveedor_id', 'laboratorio_id');
+    }
 }

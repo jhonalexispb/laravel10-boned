@@ -41,4 +41,9 @@ class Laboratorio extends Model
         date_default_timezone_set("America/Lima");
         $this->attributes["updated_at"] = Carbon::now();
     }
+
+    public function proveedores()
+    {
+        return $this->belongsToMany(Proveedor::class, 'laboratorio_proveedor', 'laboratorio_id', 'proveedor_id');
+    }
 }
