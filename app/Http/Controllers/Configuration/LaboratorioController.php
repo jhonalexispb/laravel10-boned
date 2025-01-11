@@ -60,7 +60,6 @@ class LaboratorioController extends Controller
         $proveedores = json_decode($request->input('proveedores'), true);
         $request->merge(['proveedores' => $proveedores]);
         $request->validate([
-            'name' => 'required|string|max:255|unique:laboratorio,name',
             'image_laboratorio' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'margen_minimo' => 'required|numeric|regex:/^\d+(\.\d{1,2})?$/',
             'color' => 'required|string|max:7',
@@ -77,13 +76,13 @@ class LaboratorioController extends Controller
                 return response() -> json([
                     "message" => 409,
                     "message_text" => "el laboratorio ".$LABORATORIO_EXIST->name." ya existe pero se encuentra eliminado, ¿Deseas restaurarlo?",
-                    "distrito" => $LABORATORIO_EXIST->id
-                ]);
+                    "laboratorio" => $LABORATORIO_EXIST->id
+                ],422);
             }
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el laboratorio ".$LABORATORIO_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_laboratorio")){
@@ -154,7 +153,7 @@ class LaboratorioController extends Controller
                 return response() -> json([
                     "message" => 409,
                     "message_text" => "el laboratorio ".$LABORATORIO_EXIST->name." ya existe pero se encuentra eliminado, ¿Deseas restaurarlo?",
-                    "distrito" => $LABORATORIO_EXIST->id
+                    "laboratorio" => $LABORATORIO_EXIST->id
                 ]);
             }
             return response() -> json([
@@ -212,5 +211,44 @@ class LaboratorioController extends Controller
         return response()->json([
             "message" => 200
         ]);
+    }
+
+    public function restaurar(int $id)
+    {
+        // Buscar el departamento eliminado (soft deleted) por su ID
+        $laboratorio = Laboratorio::withTrashed()->findOrFail($id);
+
+        // Restaurar el departamento si está eliminado
+        if ($laboratorio->trashed()) {
+            $laboratorio->restore();
+            return response()->json([
+                'message' => 200,
+                "message_text" => "el laboratorio ".$laboratorio->name." fue restaurado de manera satisfactoria",
+                "laboratorio_restaurado" => [
+                    "id" => $laboratorio->id,
+                    "name" => $laboratorio->name,
+                    "state" => $laboratorio->state ?? 1,
+                    "image" => $laboratorio->image ? env("APP_URL")."storage/".$laboratorio->image : '',
+                    "margen_minimo" => $laboratorio->margen_minimo,
+                    "color" => $laboratorio->color,
+                    "created_at" => $laboratorio->created_at->format("Y-m-d h:i A"),
+                    "idproveedor" => $laboratorio->proveedores->map(function ($p) {
+                            return $p->id;
+                        }),
+                    "proveedor_laboratorio" => $laboratorio->proveedores->map(function ($p) {
+                        return [
+                            "id" => $p->id,
+                            "name" => $p->name,
+                        ];
+                    }),
+                ],
+            ]);
+        }
+
+        // Si el departamento no estaba eliminado
+        return response()->json([
+            'message' => 403,
+            'message_text' => 'el laboratorio no estaba eliminado'
+        ],422);
     }
 }
