@@ -17,10 +17,6 @@ class ProveedorController extends Controller
     {
         $search = $request->get("search");
 
-        $distritos = Distrito::with('provincia.departamento')->get();
-
-        $representante = RepresentanteProveedor::all();
-
         $proveedor = Proveedor::where("name","like","%".$search."%")
                             ->orderBy("id","desc")
                             ->with('ubicacion.provincia.departamento') 
@@ -51,20 +47,6 @@ class ProveedorController extends Controller
                     "representante_celular" => $proveedor->idrepresentante ? $proveedor->representante->celular : '',
                 ];
             }),
-            "distritos" => $distritos->map(function($d) {
-                return [
-                    "id" => $d->id,
-                    "distrito_provincia_department_name" => $d->name ." / ". $d->provincia->name ." / ".$d->provincia->departamento->name,
-                ];
-            }),
-
-            "representantes" => $representante->map(function($r) {
-                return [
-                    "id" => $r->id,
-                    "name" => $r->name,
-                    "celular" => $r->celular ?? '',
-                ];
-            })
         ]);
     }
 
@@ -238,4 +220,30 @@ class ProveedorController extends Controller
             'message_text' => 'el proveedor no estaba eliminado'
         ]);
     }
+
+    public function getRecursos()
+    {
+
+        $distritos = Distrito::with('provincia.departamento')->get();
+
+        $representante = RepresentanteProveedor::all();
+
+        return response()->json([
+            
+            "distritos" => $distritos->map(function($d) {
+                return [
+                    "id" => $d->id,
+                    "distrito_provincia_department_name" => $d->name ." / ". $d->provincia->name ." / ".$d->provincia->departamento->name,
+                ];
+            }),
+
+            "representantes" => $representante->map(function($r) {
+                return [
+                    "id" => $r->id,
+                    "name" => $r->name,
+                    "celular" => $r->celular ?? '',
+                ];
+            })
+        ]);
+    }   
 }

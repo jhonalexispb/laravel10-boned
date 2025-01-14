@@ -9,7 +9,6 @@ use App\Http\Controllers\Configuration\DistritoController;
 use App\Http\Controllers\Configuration\LaboratorioController;
 use App\Http\Controllers\configuration\lugarEntregaController;
 use App\Http\Controllers\configuration\methodPaymentController;
-use App\Http\Controllers\Configuration\ProveedorController;
 use App\Http\Controllers\Configuration\ProvinciaController;
 use App\Http\Controllers\Configuration\RepresentanteProveedorController;
 use App\Http\Controllers\Configuration\SucursaleController;
@@ -18,6 +17,8 @@ use App\Http\Controllers\UserAccessController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RolPermissionController;
+
+require __DIR__.'/routes/proveedor.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -93,10 +94,6 @@ Route::group([
     //representante proveedor
     Route::put('/representante_proveedor/restaurar/{id}', [RepresentanteProveedorController::class, 'restaurar']);
     Route::resource("representante_proveedor",RepresentanteProveedorController::class)->except(['create','edit']);
-
-    //proveedor
-    Route::put('/proveedor/restaurar/{id}', [ProveedorController::class, 'restaurar']);
-    Route::resource("proveedor",ProveedorController::class)->except(['create','edit']);
 
     //CATEGORIAS PRODUCTOS
     Route::post('/laboratorio/{id}', [LaboratorioController::class, 'update']);

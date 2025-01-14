@@ -77,7 +77,7 @@ class LaboratorioController extends Controller
                     "message" => 409,
                     "message_text" => "el laboratorio ".$LABORATORIO_EXIST->name." ya existe pero se encuentra eliminado, ¿Deseas restaurarlo?",
                     "laboratorio" => $LABORATORIO_EXIST->id
-                ],422);
+                ]);
             }
             return response() -> json([
                 "message" => 403,
@@ -135,7 +135,6 @@ class LaboratorioController extends Controller
         $proveedores = json_decode($request->input('proveedores'), true);
         $request->merge(['proveedores' => $proveedores]);
         $request->validate([
-            'name' => 'required|string|max:255|unique:laboratorio,name,' . $id,
             'image_laboratorio' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'margen_minimo' => 'required|numeric|regex:/^\d+(\.\d{1,2})?$/',
             'color' => 'required|string|max:7',
