@@ -97,7 +97,7 @@ class ProveedorController extends Controller
                 "ubicacion" => $ubicacionCompleta,
                 "idrepresentante" => $proveedor->idrepresentante,
                 "representante" => $proveedor->idrepresentante ? $proveedor->representante->name : 'Sin representante',
-                "representante_celular" => $proveedor->representante->celular,
+                "representante_celular" => $proveedor->representante->celular ?? '',
             ]
         ]);
     }
@@ -209,7 +209,7 @@ class ProveedorController extends Controller
                     "ubicacion" => $ubicacionCompleta,
                     "idrepresentante" => $proveedor->idrepresentante,
                     "representante" => $proveedor->idrepresentante ? $proveedor->representante->name : 'Sin representante',
-                    "representante_celular" => $proveedor->representante->celular,
+                    "representante_celular" => $proveedor->representante->celular ?? '',
                 ]
             ]);
         }

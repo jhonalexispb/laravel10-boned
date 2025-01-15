@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RolPermissionController;
 
 require __DIR__.'/routes/proveedor.php';
+require __DIR__.'/routes/laboratorio.php';
+require __DIR__.'/routes/principioActivo.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -94,9 +96,4 @@ Route::group([
     //representante proveedor
     Route::put('/representante_proveedor/restaurar/{id}', [RepresentanteProveedorController::class, 'restaurar']);
     Route::resource("representante_proveedor",RepresentanteProveedorController::class)->except(['create','edit']);
-
-    //CATEGORIAS PRODUCTOS
-    Route::post('/laboratorio/{id}', [LaboratorioController::class, 'update']);
-    Route::put('/laboratorio/restaurar/{id}', [LaboratorioController::class, 'restaurar']);
-    Route::resource("laboratorio",LaboratorioController::class)->except(['update','create','edit']);
 });

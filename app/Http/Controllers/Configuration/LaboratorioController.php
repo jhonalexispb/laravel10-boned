@@ -42,12 +42,6 @@ class LaboratorioController extends Controller
                         ];
                     }),
                 ];
-            }),
-            "proveedores" => Proveedor::all()->map(function ($p) {
-                return [
-                    "id" => $p->id,
-                    "name" => $p->name,
-                ];
             })
         ]);
     }
@@ -250,4 +244,17 @@ class LaboratorioController extends Controller
             'message_text' => 'el laboratorio no estaba eliminado'
         ],422);
     }
+
+    public function getRecursos()
+    {
+        return response()->json([
+            
+            "proveedores" => Proveedor::all()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                ];
+            })
+        ]);
+    }   
 }
