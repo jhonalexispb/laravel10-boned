@@ -92,7 +92,7 @@ class PermissionsDemoSeeder extends Seeder
         // $user->assignRole($role2);
 
         $user = \App\Models\User::factory()->create([
-            'name' => 'Super Admin',
+            'name' => 'Alexis',
             'email' => 'super_admin_crm@gmail.com',
             'password' => bcrypt("12345678"),
         ]);

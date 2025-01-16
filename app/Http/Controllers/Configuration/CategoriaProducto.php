@@ -51,7 +51,7 @@ class CategoriaProducto extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "la categoria ".$CATEGORIA_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_categoria")){
@@ -101,7 +101,7 @@ class CategoriaProducto extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "la categoria ".$CATEGORIA_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_categoria")){
@@ -164,6 +164,6 @@ class CategoriaProducto extends Controller
         return response()->json([
             'message' => 403,
             'message_text' => 'la categoria no estaba eliminado'
-        ]);
+        ],422);
     }
 }

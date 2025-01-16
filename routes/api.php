@@ -21,6 +21,7 @@ use App\Http\Controllers\RolPermissionController;
 require __DIR__.'/routes/proveedor.php';
 require __DIR__.'/routes/laboratorio.php';
 require __DIR__.'/routes/principioActivo.php';
+require __DIR__.'/routes/categoria-producto.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -87,11 +88,6 @@ Route::group([
     Route::post('/distritos/{id}', [DistritoController::class, 'update']);
     Route::put('/distritos/restaurar/{id}', [DistritoController::class, 'restaurar']);
     Route::resource("distritos",DistritoController::class)->except(['update','create','edit']);
-
-    //CATEGORIAS PRODUCTOS
-    Route::post('/producto_categoria/{id}', [CategoriaProducto::class, 'update']);
-    Route::put('/producto_categoria/restaurar/{id}', [CategoriaProducto::class, 'restaurar']);
-    Route::resource("producto_categoria",CategoriaProducto::class)->except(['update','create','edit']);
 
     //representante proveedor
     Route::put('/representante_proveedor/restaurar/{id}', [RepresentanteProveedorController::class, 'restaurar']);
