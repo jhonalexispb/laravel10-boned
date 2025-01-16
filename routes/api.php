@@ -22,6 +22,7 @@ require __DIR__.'/routes/proveedor.php';
 require __DIR__.'/routes/laboratorio.php';
 require __DIR__.'/routes/principioActivo.php';
 require __DIR__.'/routes/categoria-producto.php';
+require __DIR__.'/routes/cliente.php';
 
 /*
 |--------------------------------------------------------------------------
