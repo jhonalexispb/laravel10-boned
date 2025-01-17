@@ -70,7 +70,7 @@ class ProveedorController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el proveedor ".$PROVEEDOR_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         $proveedor = Proveedor::create(  $request->all());
@@ -131,7 +131,7 @@ class ProveedorController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el proveedor ".$PROVEEDOR_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         $proveedor = Proveedor::findOrFail($id);
@@ -218,7 +218,7 @@ class ProveedorController extends Controller
         return response()->json([
             'message' => 403,
             'message_text' => 'el proveedor no estaba eliminado'
-        ]);
+        ],422);
     }
 
     public function getRecursos()

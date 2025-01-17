@@ -49,7 +49,7 @@ class DepartamentoController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el departamento ".$DEPARTMENT_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_department")){
@@ -98,7 +98,7 @@ class DepartamentoController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "El departamento ".$DEPARTMENT_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_department")){
@@ -164,6 +164,6 @@ class DepartamentoController extends Controller
         return response()->json([
             'message' => 403,
             'message_text' => 'el departamento no estaba eliminado'
-        ]);
+        ],422);
     }
 }

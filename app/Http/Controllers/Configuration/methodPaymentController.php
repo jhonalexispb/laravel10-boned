@@ -52,7 +52,7 @@ class methodPaymentController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "el nombre del método ya existe"
-            ]);
+            ],422);
         }
 
         $method = MethodPayment::findOrFail($id);

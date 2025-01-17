@@ -52,7 +52,7 @@ class RepresentanteProveedorController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el correo ".$REPRESENTANTE_EXIST->email." ya existe"
-            ]);
+            ],422);
         }
 
         $r = RepresentanteProveedor::create(  $request->all());
@@ -107,7 +107,7 @@ class RepresentanteProveedorController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el correo ".$REPRESENTANTE_EXIST->email." ya existe"
-            ]);
+            ],422);
         }
 
         $r = RepresentanteProveedor::findOrFail($id);
@@ -166,6 +166,6 @@ class RepresentanteProveedorController extends Controller
         return response()->json([
             'message' => 403,
             'message_text' => 'el representante no estaba eliminado'
-        ]);
+        ],422);
     }
 }

@@ -23,6 +23,10 @@ require __DIR__.'/routes/laboratorio.php';
 require __DIR__.'/routes/principioActivo.php';
 require __DIR__.'/routes/categoria-producto.php';
 require __DIR__.'/routes/cliente.php';
+require __DIR__.'/routes/representante-proveedor.php';
+require __DIR__.'/routes/geografia.php';
+require __DIR__.'/routes/comprobante.php';
+require __DIR__.'/routes/bancos.php';
 
 /*
 |--------------------------------------------------------------------------
@@ -68,29 +72,4 @@ Route::group([
     Route::resource("warehouses",WarehouseController::class)->except(['create','edit']);
     Route::resource("lugar_entrega",lugarEntregaController::class)->except(['create','edit']);
     Route::resource("metodo_pago",methodPaymentController::class)->only(['index', 'show', 'update']);
-
-    //banco
-    Route::post('/banco/{id}', [bankController::class, 'update']);
-    Route::resource("banco",bankController::class)->except(['update','create','edit']);
-
-    Route::resource("comprobante",ComprobantePagoController::class)->except(['create','edit']);
-
-    //departamentos
-    Route::post('/departamentos/{id}', [DepartamentoController::class, 'update']);
-    Route::put('/departamentos/restaurar/{id}', [DepartamentoController::class, 'restaurar']);
-    Route::resource("departamentos",DepartamentoController::class)->except(['update','create','edit']);
-
-    //provincias
-    Route::post('/provincias/{id}', [ProvinciaController::class, 'update']);
-    Route::put('/provincias/restaurar/{id}', [ProvinciaController::class, 'restaurar']);
-    Route::resource("provincias",ProvinciaController::class)->except(['update','create','edit']);
-
-    //distritos
-    Route::post('/distritos/{id}', [DistritoController::class, 'update']);
-    Route::put('/distritos/restaurar/{id}', [DistritoController::class, 'restaurar']);
-    Route::resource("distritos",DistritoController::class)->except(['update','create','edit']);
-
-    //representante proveedor
-    Route::put('/representante_proveedor/restaurar/{id}', [RepresentanteProveedorController::class, 'restaurar']);
-    Route::resource("representante_proveedor",RepresentanteProveedorController::class)->except(['create','edit']);
 });

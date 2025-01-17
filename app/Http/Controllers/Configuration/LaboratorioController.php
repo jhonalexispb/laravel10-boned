@@ -152,7 +152,7 @@ class LaboratorioController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el laboratorio ".$LABORATORIO_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_laboratorio")){

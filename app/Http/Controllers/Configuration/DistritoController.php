@@ -61,7 +61,7 @@ class DistritoController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el distrito ".$DISTRITO_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_distrito")){
@@ -115,7 +115,7 @@ class DistritoController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el distrito ".$DISTRITO_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_distrito")){
@@ -184,6 +184,6 @@ class DistritoController extends Controller
         return response()->json([
             'message' => 403,
             'message_text' => 'el distrito no estaba eliminado'
-        ]);
+        ],422);
     }
 }

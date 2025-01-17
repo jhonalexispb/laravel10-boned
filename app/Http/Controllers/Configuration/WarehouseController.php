@@ -50,7 +50,7 @@ class WarehouseController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "El nombre del almacen ya existe"
-            ]);
+            ],422);
         }
 
         $warehouse = Warehouse::create($request->all());
@@ -86,7 +86,7 @@ class WarehouseController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "El nombre del almacen ya existe"
-            ]);
+            ],422);
         }
 
         $warehouse = Warehouse::findOrFail($id);

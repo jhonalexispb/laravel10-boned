@@ -40,7 +40,7 @@ class SucursaleController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "El nombre de la sucursal ya existe"
-            ]);
+            ],422);
         }
 
         $sucursal = Sucursale::create($request->all());
@@ -74,7 +74,7 @@ class SucursaleController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "El nombre de la sucursal ya existe"
-            ]);
+            ],422);
         }
 
         $sucursal = Sucursale::findOrFail($id);

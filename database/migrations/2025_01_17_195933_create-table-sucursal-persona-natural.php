@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('clienteruc', function (Blueprint $table) {
+        Schema::create('sucursales_persona_natural', function (Blueprint $table) {
             $table->id();
-            $table->string('ruc',11);
-            $table->string('razonSocial');
-            $table->boolean('state')->default(1);
+            $table->unsignedBigInteger('dni_id');
+            $table->foreign('dni_id')->references('id')->on('dni_sucursales')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('clienteruc');
+        Schema::dropIfExists('sucursales_persona_natural');
     }
 };

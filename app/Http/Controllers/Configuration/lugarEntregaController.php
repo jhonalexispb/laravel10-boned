@@ -38,7 +38,7 @@ class lugarEntregaController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "El nombre del lugar de entrega ya existe"
-            ]);
+            ],422);
         }
 
         $lugar_entrega = lugarEntrega::create($request->all());
@@ -73,7 +73,7 @@ class lugarEntregaController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "El nombre del lugar de entrega ya existe"
-            ]);
+            ],422);
         }
 
         $lugar_entrega = lugarEntrega::findOrFail($id);

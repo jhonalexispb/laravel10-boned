@@ -60,7 +60,7 @@ class ProvinciaController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "la provincia ".$PROVINCIA_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_provincia")){
@@ -113,7 +113,7 @@ class ProvinciaController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "la provincia ".$PROVINCIA_EXIST->name." ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("image_provincia")){
@@ -183,6 +183,6 @@ class ProvinciaController extends Controller
         return response()->json([
             'message' => 403,
             'message_text' => 'la provincia no estaba eliminada'
-        ]);
+        ],422);
     }
 }

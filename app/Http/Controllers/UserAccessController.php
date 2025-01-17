@@ -56,7 +56,7 @@ class UserAccessController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "El usuario ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("imagen")){
@@ -112,7 +112,7 @@ class UserAccessController extends Controller
             return response() -> json([
                 "message" => 403,
                 "message_text" => "el usuario ya existe"
-            ]);
+            ],422);
         }
 
         $user = User::findOrFail($id);

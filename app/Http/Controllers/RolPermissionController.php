@@ -34,7 +34,7 @@ class RolPermissionController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "El rol ya existe"
-            ]);
+            ],422);
         }
         $role = Role::create([
             'guard_name' => 'api',
@@ -75,7 +75,7 @@ class RolPermissionController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "El rol ya existe"
-            ]);
+            ],422);
         }
         $role = Role::findOrFail($id);
         $role -> update($request->all());

@@ -41,7 +41,7 @@ class bankController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "el nombre del banco ya existe"
-            ]);
+            ],422);
         }
 
         if($request->hasFile("imagebank")){
@@ -82,7 +82,7 @@ class bankController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "el nombre del banco ya existe"
-            ]);
+            ],422);
         }
 
         $b = ConfigurationBank::findOrFail($id);

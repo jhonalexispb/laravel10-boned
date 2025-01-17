@@ -37,7 +37,7 @@ class ComprobantePagoController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "el nombre del comprobante ya existe"
-            ]);
+            ],422);
         }
 
         $comprobante_pago = ComprobantePago::create($request->all());
@@ -69,7 +69,7 @@ class ComprobantePagoController extends Controller
             return response()->json([
                 "message" => 403,
                 "message_text" => "el nombre del comprobante ya existe"
-            ]);
+            ],422);
         }
 
         $comprobante_pago = ComprobantePago::findOrFail($id);
