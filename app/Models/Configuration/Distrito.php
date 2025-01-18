@@ -2,6 +2,7 @@
 
 namespace App\Models\Configuration;
 
+use App\Models\ClientesSucursales;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -43,5 +44,10 @@ class Distrito extends Model
 
     public function provincia(){
         return $this->belongsTo(Provincia::class, 'idprovincia');
+    }
+
+    public function clientesSucursales()
+    {
+        return $this->hasMany(ClientesSucursales::class, 'distrito');
     }
 }

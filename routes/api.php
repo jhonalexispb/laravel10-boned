@@ -1,16 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\configuration\ComprobantePagoController;
-use App\Http\Controllers\configuration\bankController;
-use App\Http\Controllers\Configuration\CategoriaProducto;
-use App\Http\Controllers\Configuration\DepartamentoController;
-use App\Http\Controllers\Configuration\DistritoController;
-use App\Http\Controllers\Configuration\LaboratorioController;
 use App\Http\Controllers\configuration\lugarEntregaController;
 use App\Http\Controllers\configuration\methodPaymentController;
-use App\Http\Controllers\Configuration\ProvinciaController;
-use App\Http\Controllers\Configuration\RepresentanteProveedorController;
 use App\Http\Controllers\Configuration\SucursaleController;
 use App\Http\Controllers\Configuration\WarehouseController;
 use App\Http\Controllers\UserAccessController;
@@ -27,6 +19,7 @@ require __DIR__.'/routes/representante-proveedor.php';
 require __DIR__.'/routes/geografia.php';
 require __DIR__.'/routes/comprobante.php';
 require __DIR__.'/routes/bancos.php';
+require __DIR__.'/routes/clienteSucursales.php';
 
 /*
 |--------------------------------------------------------------------------

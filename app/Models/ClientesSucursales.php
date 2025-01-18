@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Configuration\Distrito;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -51,5 +52,18 @@ class ClientesSucursales extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
 
-    
+    public function ruc()
+    {
+        return $this->belongsTo(Cliente::class, 'ruc_id');
+    }
+
+    public function distrito()
+    {
+        return $this->belongsTo(Distrito::class, 'distrito');
+    }
+
+    public function categoriaDigemid()
+    {
+        return $this->belongsTo(CategoriaDigemid::class, 'categoria_digemid_id');
+    }
 }
