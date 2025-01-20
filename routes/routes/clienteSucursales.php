@@ -12,5 +12,4 @@ Route::group([
     Route::get('/cliente_sucursal/recursos', [ClientesSucursalesController::class, 'getRecursos']);
     Route::put('/cliente_sucursal/restaurar/{id}', [ClientesSucursalesController::class, 'restaurar']);
     Route::resource("cliente_sucursal",ClientesSucursalesController::class)->except(['create','edit']);
-
 });

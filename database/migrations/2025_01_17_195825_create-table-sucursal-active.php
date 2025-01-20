@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nregistro',7)->unique();
             $table->unsignedBigInteger('correo_id');
-            $table->foreign('correo_id')->references('id')->on('correos_sucursales')->onDelete('cascade');
+            $table->foreign('correo_id')->references('id')->on('correos_sucursales')->onDelete('restrict');
             $table->timestamps();
             $table->softDeletes();
         });

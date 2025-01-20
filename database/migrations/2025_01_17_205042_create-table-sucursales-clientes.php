@@ -21,13 +21,14 @@ return new class extends Migration
             $table->foreign('distrito')->references('id')->on('distritos')->onDelete('restrict');
             $table->string('celular',9)->nullable();
             $table->string('correo')->nullable();
-            $table->decimal('latitude', 10, 6)->nullable();
-            $table->decimal('longitude', 10, 6)->nullable();
+            $table->decimal('latitud', 10, 6)->nullable();
+            $table->decimal('longitud', 10, 6)->nullable();
             $table->decimal('deuda',10,1,true)->default(0);
             $table->decimal('linea_credito',10,1,true)->default(0);
             $table->boolean('modo_trabajo')->default(1)->comment('0 es secundarios y 1 es principal');
             $table->unsignedBigInteger('categoria_digemid_id');
             $table->foreign('categoria_digemid_id')->references('id')->on('categorias_digemid')->onDelete('restrict');
+            $table->boolean('estado_digemid')->comment('1 activo, 2 cierre temporal, 3 cierre definitivo, 4 sin registro digemid, 5 persona natural');
             $table->boolean('state')->default(1)->comment('0 es inactivo y 1 es activo');
             $table->timestamps();
             $table->softDeletes();

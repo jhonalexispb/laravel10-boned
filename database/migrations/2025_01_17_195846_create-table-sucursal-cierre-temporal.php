@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('sucursales_cierre_temporal', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('dni_id');
-            $table->foreign('dni_id')->references('id')->on('dni_sucursales')->onDelete('cascade');
-            $table->unsignedBigInteger('correo_id');
-            $table->foreign('correo_id')->references('id')->on('correos_sucursales')->onDelete('cascade');
+            $table->foreign('dni_id')->references('id')->on('dni_sucursales')->onDelete('restrict');
+            $table->unsignedBigInteger('correo_id')->nullable();
+            $table->foreign('correo_id')->references('id')->on('correos_sucursales')->onDelete('restrict');
             $table->timestamps();
             $table->softDeletes();
         });

@@ -20,6 +20,7 @@ require __DIR__.'/routes/geografia.php';
 require __DIR__.'/routes/comprobante.php';
 require __DIR__.'/routes/bancos.php';
 require __DIR__.'/routes/clienteSucursales.php';
+require __DIR__.'/routes/serviciosSunatReniec.php';
 
 /*
 |--------------------------------------------------------------------------
