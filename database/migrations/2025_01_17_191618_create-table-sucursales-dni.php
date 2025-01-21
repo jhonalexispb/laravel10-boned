@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('dni_sucursales', function (Blueprint $table) {
             $table->id();
-            $table->string('numero',8)->unique();
-            $table->string('nombre');
+            $table->unsignedBigInteger('ruc_id');
+            $table->foreign('ruc_id')->references('id')->on('clienteruc')->onDelete('restrict');
+            $table->unsignedBigInteger('cliente_sucursal_id');
+            $table->foreign('cliente_sucursal_id')->references('id')->on('cliente_sucursales')->onDelete('cascade');
+            $table->unsignedBigInteger('dni_id');
+            $table->foreign('dni_id')->references('id')->on('dni_clientes')->onDelete('restrict');
             $table->timestamps();
             $table->softDeletes();
         });

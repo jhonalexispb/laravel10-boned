@@ -11,10 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('sucursales_persona_natural', function (Blueprint $table) {
+        Schema::create('celulares_clientes', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('cliente_sucursal_id');
-            $table->foreign('cliente_sucursal_id')->references('id')->on('cliente_sucursales')->onDelete('cascade');
+            $table->string('celular',9)->unique();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -25,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('sucursales_persona_natural');
+        Schema::dropIfExists('celulares_clientes');
     }
 };

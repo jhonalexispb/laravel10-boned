@@ -2,6 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\ClienteSucursalAtributtes\CelularSucursal;
+use App\Models\ClienteSucursalAtributtes\CorreoSucursal;
+use App\Models\ClienteSucursalAtributtes\DniSucursal;
+use App\Models\ClienteSucursalAtributtes\SucursalesActivas;
+use App\Models\ClienteSucursalAtributtes\SucursalesCierreDefinitivo;
+use App\Models\ClienteSucursalAtributtes\SucursalesCierreTemporal;
+use App\Models\ClienteSucursalAtributtes\SucursalesPersonaNatural;
+use App\Models\ClienteSucursalAtributtes\SucursalesSinRegistroDigemid;
 use App\Models\Configuration\Distrito;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -65,5 +73,41 @@ class ClientesSucursales extends Model
     public function categoriaDigemid()
     {
         return $this->belongsTo(CategoriaDigemid::class, 'categoria_digemid_id');
+    }
+
+    public function getCelular()
+    {
+        return $this->hasMany(CelularSucursal::class, 'cliente_sucursal_id')
+                    ->with('celular');;
+    }
+
+    public function getCorreo()
+    {
+        return $this->hasMany(CorreoSucursal::class, 'cliente_sucursal_id')
+                    ->with('correo');;
+    }
+
+    public function getDni()
+    {
+        return $this->hasMany(DniSucursal::class, 'cliente_sucursal_id')
+                    ->with('dni');
+    }
+
+    public function getInformacionPorEstadoDigemid()
+    {
+        switch ($this->estado_digemid) {
+            case 1: // Activos
+                return $this->hasOne(SucursalesActivas::class, 'cliente_sucursal_id');
+            case 2: // Cierre Temporal
+                return $this->hasOne(SucursalesCierreTemporal::class, 'cliente_sucursal_id');
+            case 3: // Cierre Definitivo
+                return $this->hasOne(SucursalesCierreDefinitivo::class, 'cliente_sucursal_id');
+            case 4: // Sin Registro Digemid
+                return $this->hasOne(SucursalesSinRegistroDigemid::class, 'cliente_sucursal_id');
+            case 5: // Persona Natural
+                return $this->hasOne(SucursalesPersonaNatural::class, 'cliente_sucursal_id');
+            default:
+                return null; // O puedes devolver un valor por defecto si no hay coincidencia
+        }
     }
 }

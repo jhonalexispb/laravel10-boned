@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('sucursales_cierre_temporal', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('dni_id');
-            $table->foreign('dni_id')->references('id')->on('dni_sucursales')->onDelete('restrict');
-            $table->unsignedBigInteger('correo_id')->nullable();
-            $table->foreign('correo_id')->references('id')->on('correos_sucursales')->onDelete('restrict');
+            $table->unsignedBigInteger('cliente_sucursal_id');
+            $table->foreign('cliente_sucursal_id')->references('id')->on('cliente_sucursales')->onDelete('cascade');
+            $table->unsignedBigInteger('nregistro_id');
+            $table->foreign('nregistro_id')->references('id')->on('registros_digemid')->onDelete('restrict');
             $table->timestamps();
             $table->softDeletes();
         });
