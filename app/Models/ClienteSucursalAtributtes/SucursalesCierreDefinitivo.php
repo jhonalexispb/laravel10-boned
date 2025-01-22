@@ -19,8 +19,7 @@ class SucursalesCierreDefinitivo extends Model
 
     protected $fillable = [
         "nregistro_id",
-        "correo_id",
-        "dni_id",
+        "cliente_sucursal_id"
     ];
 
     public function getActivitylogOptions(): LogOptions

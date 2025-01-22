@@ -43,7 +43,7 @@ class CelularSucursal extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
 
-    public function celular()
+    public function getNumberCelular()
     {
         return $this->belongsTo(Celular::class, 'celular_id');
     }

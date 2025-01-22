@@ -19,7 +19,7 @@ class SucursalesActivas extends Model
 
     protected $fillable = [
         "nregistro_id",
-        "correo_id",
+        "cliente_sucursal_id",
     ];
 
     public function getActivitylogOptions(): LogOptions

@@ -65,7 +65,7 @@ class ClientesSucursales extends Model
         return $this->belongsTo(Cliente::class, 'ruc_id');
     }
 
-    public function distrito()
+    public function getNameDistrito()
     {
         return $this->belongsTo(Distrito::class, 'distrito');
     }
@@ -78,13 +78,13 @@ class ClientesSucursales extends Model
     public function getCelular()
     {
         return $this->hasMany(CelularSucursal::class, 'cliente_sucursal_id')
-                    ->with('celular');;
+                    ->with('getNumberCelular');
     }
 
     public function getCorreo()
     {
         return $this->hasMany(CorreoSucursal::class, 'cliente_sucursal_id')
-                    ->with('correo');;
+                    ->with('correo');
     }
 
     public function getDni()
