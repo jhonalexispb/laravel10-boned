@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use App\Models\Cliente;
+use App\Models\ClienteSucursalAtributtes\Dni;
 
 class serviciosConsultaSunatReniecController extends Controller
 {
@@ -77,13 +78,13 @@ class serviciosConsultaSunatReniecController extends Controller
             'dni' => ['required', 'digits:8'],
         ]);
         $dni = $request->get('dni');
-        $exist_dni = Cliente::where("ruc","=", $dni)->first();
+        $exist_dni = Dni::where("numero","=", $dni)->first();
         
         if($exist_dni){
-            return response() -> json([
-                "message_text" => "el DNI ".$exist_dni->ruc." ya se encuentra registrado, crearás una sucursal",
-                "razonSocial" =>  $exist_dni->razonSocial,
-            ],422);
+            return response()->json([
+                "message_text" => "dale un saludo a ".$exist_dni->nombre,
+                "nombre_dni" => $exist_dni->nombre ?? 'No disponible',
+            ]);
         }else{
             try {
                 // Token y configuración de la API

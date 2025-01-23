@@ -100,7 +100,7 @@ class ClientesSucursalesController extends Controller
             'razon_social' => 'required|string',
             'categoria_digemid' => 'nullable|numeric|exists:categorias_digemid,id|required_unless:estado_digemid,5',
             'nombre_comercial' => 'nullable|string|required_unless:estado_digemid,5',
-            'correo' => 'required|email|required_if:estado_digemid,1',
+            'correo' => 'nullable|email|required_if:estado_digemid,1',
             'celular' => 'required|numeric',
             'dni' => 'nullable|numeric|required_unless:estado_digemid,1',
             'nombre_dni' => 'nullable|string|required_unless:estado_digemid,1',
