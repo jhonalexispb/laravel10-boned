@@ -38,7 +38,7 @@ class ClientesSucursalesController extends Controller
 
         return response()->json([
             "total" => $cliente_sucursal->total(),
-            "cliente_sucursal" => $cliente_sucursal->map(function($d){
+            "cliente_sucursales" => $cliente_sucursal->map(function($d){
                 return [
                     "id" => $d->id,
                     "ruc" => $d->ruc ? $d->ruc->ruc : null,
@@ -98,8 +98,8 @@ class ClientesSucursalesController extends Controller
             'distrito' => 'required|numeric|exists:distritos,id',
             'ruc' => 'required|digits:11|numeric',
             'razon_social' => 'required|string',
-            'categoria_digemid' => 'required|numeric|exists:categorias_digemid,id|required_unless:categoria_digemid_id,1',
-            'nombre_comercial' => 'required|string|required_unless:estado_digemid,5',
+            'categoria_digemid' => 'nullable|numeric|exists:categorias_digemid,id|required_unless:estado_digemid,5',
+            'nombre_comercial' => 'nullable|string|required_unless:estado_digemid,5',
             'correo' => 'required|email|required_if:estado_digemid,1',
             'celular' => 'required|numeric',
             'dni' => 'nullable|numeric|required_unless:estado_digemid,1',
@@ -173,6 +173,10 @@ class ClientesSucursalesController extends Controller
                 }
             }
 
+            if($request->estado_digemid == 5){
+                $request->nombre_comercial = $request->nombre_dni;
+            }
+
             $sucursal = ClientesSucursales::create([
                 'ruc_id' => $ruc_exist->id,
                 'nombre_comercial' => $request->nombre_comercial,
@@ -204,7 +208,7 @@ class ClientesSucursalesController extends Controller
                 ]);
             }
 
-            if ($request->estado_digemid != 4 || $request->estado_digemid != 5) {
+            if ($request->estado_digemid == 1 || $request->estado_digemid == 2 || $request->estado_digemid == 3) {
                 $registro_digemid = RegistroDigemid::create([
                     'nregistro' => $request->nregistro,
                 ]);
@@ -254,7 +258,7 @@ class ClientesSucursalesController extends Controller
                     "ruc" => $sucursal->ruc ? $sucursal->ruc->ruc : null,
                     "razon_social" => $sucursal->ruc ? $sucursal->ruc->razonSocial : null,
                     "state" => $sucursal->state ?? 1,
-                    "created_at" => $sucursal->created_at->format("Y-m-sucursal h:i A"),
+                    "created_at" => $sucursal->created_at->format("Y-m-d h:i A"),
                     "nombre_comercial" => $sucursal->nombre_comercial,
                     "estado_digemid"=> $sucursal->estado_digemid,
                     "direccion" => $sucursal->direccion,
@@ -284,7 +288,7 @@ class ClientesSucursalesController extends Controller
                         ];
                     }),
                     "inf_by_estado_digemid" => [
-                        "nregistro" => $request->nregistro,    
+                        "nregistro" => $request->nregistro ?? null,    
                     ]
                 ]
             ]);

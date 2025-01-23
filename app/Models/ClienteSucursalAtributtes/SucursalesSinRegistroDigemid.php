@@ -18,8 +18,7 @@ class SucursalesSinRegistroDigemid extends Model
     protected $table = "sucursales_sin_registro_digemid";
 
     protected $fillable = [
-        "correo_id",
-        "dni_id",
+        "cliente_sucursal_id"
     ];
 
     public function getActivitylogOptions(): LogOptions

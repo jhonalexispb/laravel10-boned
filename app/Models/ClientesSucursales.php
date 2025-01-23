@@ -38,6 +38,7 @@ class ClientesSucursales extends Model
         "linea_credito",
         "modo_trabajo",
         "categoria_digemid_id",
+        "estado_digemid",
         "state",
     ];
 
