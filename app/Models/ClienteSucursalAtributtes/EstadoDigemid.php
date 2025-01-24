@@ -9,17 +9,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class SucursalesActivas extends Model
+class EstadoDigemid extends Model
 {
     use HasFactory;
     use SoftDeletes;
     use LogsActivity;
 
-    protected $table = "sucursales_activas";
+    protected $table = "estados_digemid";
 
     protected $fillable = [
-        "nregistro_id",
-        "cliente_sucursal_id",
+        "nombre",
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -28,7 +27,7 @@ class SucursalesActivas extends Model
         return LogOptions::defaults()
             ->logAll()  // Si deseas registrar todos los cambios
             ->logOnlyDirty()  // Opción de solo registrar cambios realizados (no todos los atributos)
-            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} SucursalActiva");
+            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Registro digemid");
     }
 
     public function setCreatedAtAttribute($value){
@@ -39,10 +38,5 @@ class SucursalesActivas extends Model
     public function setUpdatedAtAttribute($value){
         date_default_timezone_set("America/Lima");
         $this->attributes["updated_at"] = Carbon::now();
-    }
-
-    public function nregistro()
-    {
-        return $this->belongsTo(RegistroDigemid::class, 'nregistro_id');
     }
 }

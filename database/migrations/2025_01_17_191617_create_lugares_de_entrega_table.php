@@ -13,10 +13,13 @@ return new class extends Migration
     {
         Schema::create('lugares_de_entrega', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->unsignedBigInteger('sucursal_id')->nullable();
+            $table->foreign('sucursal_id')->references('id')->on('cliente_sucursales')->onDelete('cascade');
             $table->string('address');
-            $table->boolean('state')->default(1);
-            $table->point('destination_coordinates')->nullable();
+            $table->unsignedBigInteger('distrito_id')->nullable();
+            $table->foreign('distrito_id')->references('id')->on('distritos')->onDelete('restrict');
+            $table->decimal('latitud', 10, 6)->nullable();
+            $table->decimal('longitud', 10, 6)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

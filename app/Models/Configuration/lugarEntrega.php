@@ -15,10 +15,11 @@ class lugarEntrega extends Model
     protected $table = 'lugares_de_entrega';
 
     protected $fillable = [
-        "name",
+        "sucursal_id",
         "address",
-        "state",
-        "destination_coordinates",
+        "distrito_id",
+        "latitud",
+        "longitud",
     ];
 
     public function setCreatedAtAttribute($value){

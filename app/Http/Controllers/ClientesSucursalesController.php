@@ -11,6 +11,7 @@ use App\Models\ClienteSucursalAtributtes\Correo;
 use App\Models\ClienteSucursalAtributtes\CorreoSucursal;
 use App\Models\ClienteSucursalAtributtes\Dni;
 use App\Models\ClienteSucursalAtributtes\DniSucursal;
+use App\Models\ClienteSucursalAtributtes\EstadoDigemid;
 use App\Models\ClienteSucursalAtributtes\RegistroDigemid;
 use App\Models\ClienteSucursalAtributtes\SucursalesActivas;
 use App\Models\ClienteSucursalAtributtes\SucursalesCierreDefinitivo;
@@ -18,6 +19,7 @@ use App\Models\ClienteSucursalAtributtes\SucursalesCierreTemporal;
 use App\Models\ClienteSucursalAtributtes\SucursalesPersonaNatural;
 use App\Models\ClienteSucursalAtributtes\SucursalesSinRegistroDigemid;
 use App\Models\Configuration\Distrito;
+use App\Models\configuration\lugarEntrega;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -47,17 +49,25 @@ class ClientesSucursalesController extends Controller
                     "created_at" => $d->created_at->format("Y-m-d h:i A"),
                     "nombre_comercial" => $d->nombre_comercial,
                     "direccion" => $d->direccion,
-                    "latitud" => $d->latitud,
-                    "longitud" => $d->longitud,
                     "deuda" => $d->deuda,
                     "linea_credito" => $d->linea_credito,
                     "modo_trabajo" => $d->modo_trabajo,
                     "estado_digemid"=> $d->estado_digemid,
+                    "nombre_estado_digemid"=> $d->getEstadoDigemid->nombre,
                     "distrito" => $d->distrito ? $d->getNameDistrito->name : null, // Accedemos al nombre del distrito
                     "provincia" => $d->distrito && $d->getNameDistrito->provincia ? $d->getNameDistrito->provincia->name : null, // Accedemos al nombre de la provincia
                     "departamento" => $d->distrito && $d->getNameDistrito->provincia && $d->getNameDistrito->provincia->departamento ? $d->getNameDistrito->provincia->departamento->name : null, // Accedemos al nombre del departamento
                     "categoria_digemid" => $d->categoriaDigemid ? $d->categoriaDigemid->nombre : null,
                     "categoria_digemid_id" => $d->categoriaDigemid ? $d->categoriaDigemid->id : null,
+                    "nregistro" => $d->nregistro ? $d->getRegistro->nregistro : null,
+
+                    "coordenadas_" => $d->getDirecciones->map(function($lugarEntrega) {
+                        return [
+                            "latitud" => $lugarEntrega->latitud, // latitud de la dirección
+                            "longitud" => $lugarEntrega->longitud, // longitud de la dirección
+                            "address" => $lugarEntrega->address, // dirección del lugar
+                        ];
+                    }),
 
                     "celulares" => $d->getCelular->map(function($celularSucursal) {
                         return $celularSucursal->getNumberCelular ? $celularSucursal->getNumberCelular->celular : null;
@@ -73,15 +83,6 @@ class ClientesSucursalesController extends Controller
                             "nombre_dni" => $dniSucursal->dni->nombre,
                         ];
                     }),
-
-                    "inf_by_estado_digemid" => [
-                        
-                        "nregistro" => $d->getInformacionPorEstadoDigemid->nregistro->nregistro ?? null,
-                        
-                        ]
-                    /* "inf_by_estado_digemid" => $d->getInformacionPorEstadoDigemid ? [
-                        "nregistro" => $d->getInformacionPorEstadoDigemid->nregistro->nregistro,
-                    ] : null */
                 ];
             })
         ]);
@@ -105,6 +106,8 @@ class ClientesSucursalesController extends Controller
             'dni' => 'nullable|numeric|required_unless:estado_digemid,1',
             'nombre_dni' => 'nullable|string|required_unless:estado_digemid,1',
             'nregistro' => 'nullable|string|required_if:estado_digemid,1|required_if:estado_digemid,2|required_if:estado_digemid,3|unique:registros_digemid,nregistro',
+            'latitud' => 'nullable|numeric|between:-90,90',
+            'longitud' => 'nullable|numeric|between:-180,180',
         ]);
 
         DB::beginTransaction();
@@ -177,15 +180,28 @@ class ClientesSucursalesController extends Controller
                 $request->nombre_comercial = $request->nombre_dni;
             }
 
+            if ($request->estado_digemid == 1 || $request->estado_digemid == 2 || $request->estado_digemid == 3) {
+                $registro_digemid = RegistroDigemid::create([
+                    'nregistro' => $request->nregistro,
+                ]);
+            }
+
             $sucursal = ClientesSucursales::create([
                 'ruc_id' => $ruc_exist->id,
                 'nombre_comercial' => $request->nombre_comercial,
                 'direccion' => $request->direccion,
                 'distrito' => $request->distrito,
-                'latitud' => $request->latitud,
-                'longitud' => $request->longitud,
                 'categoria_digemid_id' => $request->categoria_digemid,
                 'estado_digemid' => $request->estado_digemid,
+                'nregistro_id' => $registro_digemid->id ?? null,
+            ]);
+
+            lugarEntrega::create([
+                'sucursal_id' => $sucursal->id,
+                'address' => $sucursal->direccion,
+                'distrito_id' => $sucursal->distrito,
+                'latitud' => $request->latitud,
+                'longitud'=> $request->longitud,
             ]);
 
             CorreoSucursal::create([
@@ -208,48 +224,6 @@ class ClientesSucursalesController extends Controller
                 ]);
             }
 
-            if ($request->estado_digemid == 1 || $request->estado_digemid == 2 || $request->estado_digemid == 3) {
-                $registro_digemid = RegistroDigemid::create([
-                    'nregistro' => $request->nregistro,
-                ]);
-            }
-
-            switch($request->estado_digemid){
-                //activos
-                case 1 :
-                    SucursalesActivas::create([
-                        'cliente_sucursal_id' => $sucursal->id,
-                        'nregistro_id' => $registro_digemid->id,
-                    ]);
-                    break;
-                //cierre temporal
-                case 2 :
-                    SucursalesCierreTemporal::create([
-                        'cliente_sucursal_id' => $sucursal->id,
-                        'nregistro_id' => $registro_digemid->id,
-                    ]);
-                    break;
-                //cierre definitivo
-                case 3 :
-                    SucursalesCierreDefinitivo::create([
-                        'cliente_sucursal_id' => $sucursal->id,
-                        'nregistro_id' => $registro_digemid->id,
-                    ]);
-                    break;
-                //sin registro digemid
-                case 4 :
-                    SucursalesSinRegistroDigemid::create([
-                        'cliente_sucursal_id' => $sucursal->id,
-                    ]);
-                    break;
-                //persona natural
-                case 5 :
-                    SucursalesPersonaNatural::create([
-                        'cliente_sucursal_id' => $sucursal->id,
-                    ]);
-                    break;
-            }
-
             DB::commit();
 
             return response()->json([
@@ -261,9 +235,8 @@ class ClientesSucursalesController extends Controller
                     "created_at" => $sucursal->created_at->format("Y-m-d h:i A"),
                     "nombre_comercial" => $sucursal->nombre_comercial,
                     "estado_digemid"=> $sucursal->estado_digemid,
+                    "nombre_estado_digemid"=> $sucursal->getEstadoDigemid->nombre,
                     "direccion" => $sucursal->direccion,
-                    "latitud" => $sucursal->latitud,
-                    "longitud" => $sucursal->longitud,
                     "deuda" => $sucursal->deuda ?? 0.0,
                     "linea_credito" => $sucursal->linea_credito ?? 0.0,
                     "modo_trabajo" => $sucursal->modo_trabajo,
@@ -272,6 +245,7 @@ class ClientesSucursalesController extends Controller
                     "departamento" => $sucursal->distrito && $sucursal->getNameDistrito->provincia && $sucursal->getNameDistrito->provincia->departamento ? $sucursal->getNameDistrito->provincia->departamento->name : null, // Accedemos al nombre del departamento
                     "categoria_digemid" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->nombre : null,
                     "categoria_digemid_id" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->id : null,
+                    "nregistro" => $sucursal->nregistro ? $sucursal->getRegistro->nregistro : null,
 
                     "celulares" => $sucursal->getCelular->map(function($celularSucursal) {
                         return $celularSucursal->getNumberCelular ? $celularSucursal->getNumberCelular->celular : null;
@@ -287,9 +261,14 @@ class ClientesSucursalesController extends Controller
                             "nombre_dni" => $dniSucursal->dni->nombre,
                         ];
                     }),
-                    "inf_by_estado_digemid" => [
-                        "nregistro" => $request->nregistro ?? null,    
-                    ]
+
+                    "coordenadas_" => $sucursal->getDirecciones->map(function($lugarEntrega) {
+                        return [
+                            "latitud" => $lugarEntrega->latitud, // latitud de la dirección
+                            "longitud" => $lugarEntrega->longitud, // longitud de la dirección
+                            "address" => $lugarEntrega->address, // dirección del lugar
+                        ];
+                    }),
                 ]
             ]);
         } catch (\Exception $e) {
@@ -332,6 +311,7 @@ class ClientesSucursalesController extends Controller
     {   
         $distritos = Distrito::where("state",1)->get();
         $categorias_digemid = CategoriaDigemid::all();
+        $estados_digemid = EstadoDigemid::all();
 
         return response()->json([
             "distritos" => $distritos->map(function($d) {
@@ -344,6 +324,13 @@ class ClientesSucursalesController extends Controller
                 return [
                     "id" => $d->id,
                     "nombre" => $d->nombre ." (". $d->abreviatura.")",
+                ];
+            }),
+
+            "estados_digemid" => $estados_digemid->map(function($d) {
+                return [
+                    "id" => $d->id,
+                    "nombre" => $d->nombre,
                 ];
             }),
         ]);
