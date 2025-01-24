@@ -7,19 +7,16 @@ use App\Models\Cliente;
 use App\Models\ClientesSucursales;
 use App\Models\ClienteSucursalAtributtes\Celular;
 use App\Models\ClienteSucursalAtributtes\CelularSucursal;
+use App\Models\ClienteSucursalAtributtes\ConversorEstadoDigemid;
 use App\Models\ClienteSucursalAtributtes\Correo;
 use App\Models\ClienteSucursalAtributtes\CorreoSucursal;
 use App\Models\ClienteSucursalAtributtes\Dni;
 use App\Models\ClienteSucursalAtributtes\DniSucursal;
 use App\Models\ClienteSucursalAtributtes\EstadoDigemid;
 use App\Models\ClienteSucursalAtributtes\RegistroDigemid;
-use App\Models\ClienteSucursalAtributtes\SucursalesActivas;
-use App\Models\ClienteSucursalAtributtes\SucursalesCierreDefinitivo;
-use App\Models\ClienteSucursalAtributtes\SucursalesCierreTemporal;
-use App\Models\ClienteSucursalAtributtes\SucursalesPersonaNatural;
-use App\Models\ClienteSucursalAtributtes\SucursalesSinRegistroDigemid;
 use App\Models\Configuration\Distrito;
 use App\Models\configuration\lugarEntrega;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -44,6 +41,7 @@ class ClientesSucursalesController extends Controller
                 return [
                     "id" => $d->id,
                     "ruc" => $d->ruc ? $d->ruc->ruc : null,
+                    "ruc_id" => $d->ruc ? $d->ruc->id : null,
                     "razon_social" => $d->ruc ? $d->ruc->razonSocial : null,
                     "state" => $d->state ?? 1,
                     "created_at" => $d->created_at->format("Y-m-d h:i A"),
@@ -55,11 +53,15 @@ class ClientesSucursalesController extends Controller
                     "estado_digemid"=> $d->estado_digemid,
                     "nombre_estado_digemid"=> $d->getEstadoDigemid->nombre,
                     "distrito" => $d->distrito ? $d->getNameDistrito->name : null, // Accedemos al nombre del distrito
+                    "distrito_id" => $d->distrito ? $d->getNameDistrito->id : null,
                     "provincia" => $d->distrito && $d->getNameDistrito->provincia ? $d->getNameDistrito->provincia->name : null, // Accedemos al nombre de la provincia
                     "departamento" => $d->distrito && $d->getNameDistrito->provincia && $d->getNameDistrito->provincia->departamento ? $d->getNameDistrito->provincia->departamento->name : null, // Accedemos al nombre del departamento
                     "categoria_digemid" => $d->categoriaDigemid ? $d->categoriaDigemid->nombre : null,
                     "categoria_digemid_id" => $d->categoriaDigemid ? $d->categoriaDigemid->id : null,
-                    "nregistro" => $d->nregistro ? $d->getRegistro->nregistro : null,
+                    "nregistro" => $d->nregistro_id ? $d->getRegistro->nregistro : null,
+                    "nregistro_id" => $d->nregistro_id ? $d->getRegistro->id : null,
+                    "image" => $d->image ? $d->image : null,
+                    "documento_en_proceso" => $d->documento_en_proceso ? $d->documento_en_proceso : null,
 
                     "coordenadas_" => $d->getDirecciones->map(function($lugarEntrega) {
                         return [
@@ -69,20 +71,19 @@ class ClientesSucursalesController extends Controller
                         ];
                     }),
 
-                    "celulares" => $d->getCelular->map(function($celularSucursal) {
+                    "celulares" => $d->getCelular ? $d->getCelular->map(function($celularSucursal) {
                         return $celularSucursal->getNumberCelular ? $celularSucursal->getNumberCelular->celular : null;
-                    }),
+                    }) : [],
 
-                    "correos" => $d->getCorreo->map(function($correo) {
+                    "correos" => $d->getCorreo ? $d->getCorreo->map(function($correo) {
                         return $correo->correo ? $correo->correo->correo : null;
-                    }),
+                    }) : [],
 
-                    "dni" => $d->getDni->map(function($dniSucursal) {
-                        return [
-                            "numero" => $dniSucursal->dni->numero, // Obtén el número de DNI desde la relación
-                            "nombre_dni" => $dniSucursal->dni->nombre,
-                        ];
-                    }),
+                    "dni" => $d->getDni ? [
+                        "dni_id" => $d->getDni->dni->id,
+                        "numero" => $d->getDni->dni->numero,
+                        "nombre_dni" => $d->getDni->dni->nombre,
+                    ] : null,
                 ];
             })
         ]);
@@ -94,17 +95,21 @@ class ClientesSucursalesController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'estado_digemid' => 'required|in:1,2,3,4,5',
+            'estado_digemid' => 'required|numeric|exists:estados_digemid,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg',
+            'documento_en_proceso' => 'nullable|image|mimes:jpeg,png,jpg',
             'direccion' => 'required',
             'distrito' => 'required|numeric|exists:distritos,id',
             'ruc' => 'required|digits:11|numeric',
             'razon_social' => 'required|string',
             'categoria_digemid' => 'nullable|numeric|exists:categorias_digemid,id|required_unless:estado_digemid,5',
             'nombre_comercial' => 'nullable|string|required_unless:estado_digemid,5',
-            'correo' => 'nullable|email|required_if:estado_digemid,1',
-            'celular' => 'required|numeric',
-            'dni' => 'nullable|numeric|required_unless:estado_digemid,1',
-            'nombre_dni' => 'nullable|string|required_unless:estado_digemid,1',
+            'correo' => 'nullable|email',
+            /* 'correo' => 'nullable|email|required_if:estado_digemid,1|required_if:estado_digemid,2', */
+            /* 'celular' => 'required|numeric', */
+            'celular' => 'nullable|numeric',
+            'dni' => 'nullable|numeric|required_if:estado_digemid,2|required_if:estado_digemid,3|required_if:estado_digemid,4|required_if:estado_digemid,5',
+            'nombre_dni' => 'nullable|string|required_if:estado_digemid,2|required_if:estado_digemid,3|required_if:estado_digemid,4|required_if:estado_digemid,5',
             'nregistro' => 'nullable|string|required_if:estado_digemid,1|required_if:estado_digemid,2|required_if:estado_digemid,3|unique:registros_digemid,nregistro',
             'latitud' => 'nullable|numeric|between:-90,90',
             'longitud' => 'nullable|numeric|between:-180,180',
@@ -131,36 +136,40 @@ class ClientesSucursalesController extends Controller
                 ]);
             }
 
-            $celular_exist = Celular::where("celular","=",$request->celular)->first();
-            if($celular_exist){
-                if($celular_exist->getRucAsoc()->id != $ruc_exist->id){
-                    return response() -> json([
-                        "message" => 403,
-                        "message_text" => "el celular ".$request->celular." ya esta siendo usado. Solicita otro numero de celular a tu sucursal",
-                    ],422);
+            if ($request->celular) {
+                $celular_exist = Celular::where("celular","=",$request->celular)->first();
+                if($celular_exist){
+                    if($celular_exist->getRucAsoc()->id != $ruc_exist->id){
+                        return response() -> json([
+                            "message" => 403,
+                            "message_text" => "el celular ".$request->celular." ya esta siendo usado. Solicita otro numero de celular a tu sucursal",
+                        ],422);
+                    }
+                }else{
+                    $celular_exist = Celular::create([
+                        'celular' => $request->celular,
+                    ]);    
                 }
-            }else{
-                $celular_exist = Celular::create([
-                    'celular' => $request->celular,
-                ]);    
             }
 
-            $correo_exist = Correo::where("correo","=",$request->correo)->first();
-            if($correo_exist){
-                if($correo_exist->getRucAsoc()->id != $ruc_exist->id){
-                    return response() -> json([
-                        "message" => 403,
-                        "message_text" => "el correo ".$request->correo." ya esta siendo usado. Solicita otro correo a tu sucursal",
-                    ],422);
+            if ($request->correo) {
+                $correo_exist = Correo::where("correo","=",$request->correo)->first();
+                if($correo_exist){
+                    if($correo_exist->getRucAsoc()->id != $ruc_exist->id){
+                        return response() -> json([
+                            "message" => 403,
+                            "message_text" => "el correo ".$request->correo." ya esta siendo usado. Solicita otro correo a tu sucursal",
+                        ],422);
+                    }
+                }else{
+                    $correo_exist = Correo::create([
+                        'correo' => $request->correo,
+                    ]);  
                 }
-            }else{
-                $correo_exist = Correo::create([
-                    'correo' => $request->correo,
-                ]);  
             }
 
-            if ($request->estado_digemid != 1) {
-            $dni_exist = Dni::where("numero","=",$request->dni)->first();
+            if ($request->estado_digemid == 2 || $request->estado_digemid == 3 || $request->estado_digemid == 4 || $request->estado_digemid == 5) {
+                $dni_exist = Dni::where("numero","=",$request->dni)->first();
                 if($dni_exist){
                     if($dni_exist->getRucAsoc()->id != $ruc_exist->id){
                         return response() -> json([
@@ -186,6 +195,22 @@ class ClientesSucursalesController extends Controller
                 ]);
             }
 
+            if($request->image){
+                $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(),[
+                    'folder' => 'ClienteSucursales',  // Nombre de la carpeta en Cloudinary
+                ]);
+                $imageUrl = $uploadedFile->getSecurePath();
+                $imagePublicId = $uploadedFile->getPublicId();
+            }
+
+            if($request->documento_en_proceso){
+                $uploadedFile = Cloudinary::upload($request->file('documento_en_proceso')->getRealPath(),[
+                    'folder' => 'ActasInspeccionDigemid',  // Nombre de la carpeta en Cloudinary
+                ]);
+                $documentUrl  = $uploadedFile->getSecurePath();
+                $documentPublicId = $uploadedFile->getPublicId();
+            }
+
             $sucursal = ClientesSucursales::create([
                 'ruc_id' => $ruc_exist->id,
                 'nombre_comercial' => $request->nombre_comercial,
@@ -194,6 +219,10 @@ class ClientesSucursalesController extends Controller
                 'categoria_digemid_id' => $request->categoria_digemid,
                 'estado_digemid' => $request->estado_digemid,
                 'nregistro_id' => $registro_digemid->id ?? null,
+                'image' => isset($imageUrl) ? $imageUrl : null,
+                'image_public_id' => isset($imagePublicId) ? $imagePublicId : null,
+                'documento_en_proceso' => isset($documentUrl) ? $documentUrl : null,
+                'documento_en_proceso_public_id' => isset($documentPublicId) ? $documentPublicId : null,
             ]);
 
             lugarEntrega::create([
@@ -204,19 +233,23 @@ class ClientesSucursalesController extends Controller
                 'longitud'=> $request->longitud,
             ]);
 
-            CorreoSucursal::create([
-                'ruc_id' => $ruc_exist->id,
-                'cliente_sucursal_id' => $sucursal->id,
-                'correo_id' => $correo_exist->id,
-            ]);
+            if ($request->correo) {
+                CorreoSucursal::create([
+                    'ruc_id' => $ruc_exist->id,
+                    'cliente_sucursal_id' => $sucursal->id,
+                    'correo_id' => $correo_exist->id,
+                ]);
+            }
 
-            CelularSucursal::create([
-                'ruc_id' => $ruc_exist->id,
-                'cliente_sucursal_id' => $sucursal->id,
-                'celular_id' => $celular_exist->id,
-            ]);
+            if ($request->celular) {
+                CelularSucursal::create([
+                    'ruc_id' => $ruc_exist->id,
+                    'cliente_sucursal_id' => $sucursal->id,
+                    'celular_id' => $celular_exist->id,
+                ]);
+            }
 
-            if ($request->estado_digemid != 1) {
+            if ($request->estado_digemid == 2 || $request->estado_digemid == 3 || $request->estado_digemid == 4 || $request->estado_digemid == 5) {
                 DniSucursal::create([
                     'ruc_id' => $ruc_exist->id,
                     'cliente_sucursal_id' => $sucursal->id,
@@ -245,7 +278,7 @@ class ClientesSucursalesController extends Controller
                     "departamento" => $sucursal->distrito && $sucursal->getNameDistrito->provincia && $sucursal->getNameDistrito->provincia->departamento ? $sucursal->getNameDistrito->provincia->departamento->name : null, // Accedemos al nombre del departamento
                     "categoria_digemid" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->nombre : null,
                     "categoria_digemid_id" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->id : null,
-                    "nregistro" => $sucursal->nregistro ? $sucursal->getRegistro->nregistro : null,
+                    "nregistro" => $sucursal->nregistro_id ? $sucursal->getRegistro->nregistro : null,
 
                     "celulares" => $sucursal->getCelular->map(function($celularSucursal) {
                         return $celularSucursal->getNumberCelular ? $celularSucursal->getNumberCelular->celular : null;
@@ -333,6 +366,43 @@ class ClientesSucursalesController extends Controller
                     "nombre" => $d->nombre,
                 ];
             }),
+
+            
+        ]);
+    }  
+
+    public function getRecursosParaEditar(string $id)
+    {   
+        
+        $sucursal = ClientesSucursales::find($id);
+        $estado_digemid_sucursal = (array) $sucursal->estado_digemid;
+        $conversores = ConversorEstadoDigemid::whereIn('estado_digemid_id', $estado_digemid_sucursal)->with('estadoDigemid')->get();
+
+        $distritos = Distrito::where("state",1)->get();
+        $categorias_digemid = CategoriaDigemid::all();
+
+        return response()->json([
+            "distritos" => $distritos->map(function($d) {
+                return [
+                    "id" => $d->id,
+                    "distrito_provincia_department_name" => $d->name ." / ". $d->provincia->name ." / ". $d->provincia->departamento->name,
+                ];
+            }),
+            "categorias_digemid" => $categorias_digemid->map(function($d) {
+                return [
+                    "id" => $d->id,
+                    "nombre" => $d->nombre ." (". $d->abreviatura.")",
+                ];
+            }),
+
+            "estados_digemid" => $conversores->map(function($d) {
+                return [
+                    "id" => $d->estadoDigemid->id,
+                    "nombre" => $d->estadoDigemid->nombre,
+                ];
+            }),
+
+            
         ]);
     }  
 }

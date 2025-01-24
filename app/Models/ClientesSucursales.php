@@ -3,15 +3,11 @@
 namespace App\Models;
 
 use App\Models\ClienteSucursalAtributtes\CelularSucursal;
+use App\Models\ClienteSucursalAtributtes\ConversorEstadoDigemid;
 use App\Models\ClienteSucursalAtributtes\CorreoSucursal;
 use App\Models\ClienteSucursalAtributtes\DniSucursal;
 use App\Models\ClienteSucursalAtributtes\EstadoDigemid;
 use App\Models\ClienteSucursalAtributtes\RegistroDigemid;
-use App\Models\ClienteSucursalAtributtes\SucursalesActivas;
-use App\Models\ClienteSucursalAtributtes\SucursalesCierreDefinitivo;
-use App\Models\ClienteSucursalAtributtes\SucursalesCierreTemporal;
-use App\Models\ClienteSucursalAtributtes\SucursalesPersonaNatural;
-use App\Models\ClienteSucursalAtributtes\SucursalesSinRegistroDigemid;
 use App\Models\Configuration\Distrito;
 use App\Models\configuration\lugarEntrega;
 use Carbon\Carbon;
@@ -66,6 +62,14 @@ class ClientesSucursales extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
 
+    public static function getOrCreateCliente($ruc, $razon_social)
+    {
+        return self::withTrashed()->where('ruc', $ruc)->firstOrCreate(
+            ['ruc' => $ruc],
+            ['razonSocial' => $razon_social]
+        );
+    }
+
     public function ruc()
     {
         return $this->belongsTo(Cliente::class, 'ruc_id');
@@ -95,8 +99,7 @@ class ClientesSucursales extends Model
 
     public function getDni()
     {
-        return $this->hasMany(DniSucursal::class, 'cliente_sucursal_id')
-                    ->with('dni');
+        return $this->hasOne(DniSucursal::class, 'cliente_sucursal_id');
     }
 
     public function getRegistro()
