@@ -329,7 +329,271 @@ class ClientesSucursalesController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $request->validate([
+            'estado_digemid' => 'required|numeric|exists:estados_digemid,id',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg',
+            'documento_en_proceso' => 'nullable|image|mimes:jpeg,png,jpg',
+            'direccion' => 'required',
+            'distrito' => 'required|numeric|exists:distritos,id',
+            'ruc' => 'required|digits:11|numeric',
+            'razon_social' => 'required|string',
+            'categoria_digemid' => 'nullable|numeric|exists:categorias_digemid,id|required_unless:estado_digemid,5',
+            'nombre_comercial' => 'nullable|string|required_unless:estado_digemid,5',
+            'correo' => 'nullable|email',
+            /* 'correo' => 'nullable|email|required_if:estado_digemid,1|required_if:estado_digemid,2', */
+            /* 'celular' => 'required|numeric', */
+            'celular' => 'nullable|numeric',
+            'dni' => 'nullable|numeric|required_if:estado_digemid,2|required_if:estado_digemid,3|required_if:estado_digemid,4|required_if:estado_digemid,5',
+            'nombre_dni' => 'nullable|string|required_if:estado_digemid,2|required_if:estado_digemid,3|required_if:estado_digemid,4|required_if:estado_digemid,5',
+            'nregistro' => 'nullable|string|required_if:estado_digemid,1|required_if:estado_digemid,2|required_if:estado_digemid,3',
+            'latitud' => 'nullable|numeric|between:-90,90',
+            'longitud' => 'nullable|numeric|between:-180,180',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $ruc_exist = Cliente::withTrashed()
+                                ->where('ruc',$request->ruc)
+                                ->first();
+            if($ruc_exist){
+                if ($ruc_exist->deleted_at) {
+                    // Si el departamento está eliminado lógicamente, puedes restaurarlo o actualizarlo
+                    return response() -> json([
+                        "message" => 409,
+                        "message_text" => "el ruc ".$ruc_exist->ruc.' '.$ruc_exist->razonSocial." ya existe pero se encuentra eliminado, contactate con el administrador",
+                    ]);
+                }
+            } else {
+                $ruc_exist = Cliente::create([
+                    'ruc' => $request->ruc,
+                    'razonSocial' => $request->razon_social,
+                ]);
+            }
+
+            if ($request->celular) {
+                $celular_exist = Celular::where("celular","=",$request->celular)->first();
+                if($celular_exist){
+                    if($celular_exist->getRucAsoc()->id != $ruc_exist->id){
+                        return response() -> json([
+                            "message" => 403,
+                            "message_text" => "el celular ".$request->celular." ya esta siendo usado. Solicita otro numero de celular a tu sucursal",
+                        ],422);
+                    }
+                }else{
+                    $celular_exist = Celular::create([
+                        'celular' => $request->celular,
+                    ]);    
+                }
+            }
+
+            if ($request->correo) {
+                $correo_exist = Correo::where("correo","=",$request->correo)->first();
+                if($correo_exist){
+                    if($correo_exist->getRucAsoc()->id != $ruc_exist->id){
+                        return response() -> json([
+                            "message" => 403,
+                            "message_text" => "el correo ".$request->correo." ya esta siendo usado. Solicita otro correo a tu sucursal",
+                        ],422);
+                    }
+                }else{
+                    $correo_exist = Correo::create([
+                        'correo' => $request->correo,
+                    ]);  
+                }
+            }
+
+            if ($request->estado_digemid == 2 || $request->estado_digemid == 3 || $request->estado_digemid == 4 || $request->estado_digemid == 5) {
+                $dni_exist = Dni::where("numero","=",$request->dni)->first();
+                if($dni_exist){
+                    if($dni_exist->getRucAsoc()->id != $ruc_exist->id){
+                        return response() -> json([
+                            "message" => 403,
+                            "message_text" => "el DNI ".$request->dni." ya esta siendo usado. Solicita otro DNI a tu sucursal",
+                        ],422);
+                    }
+                }else{
+                    $dni_exist = Dni::create([
+                        'numero' => $request->dni,
+                        'nombre' => $request->nombre_dni,
+                    ]);
+                }
+            }
+
+            if($request->estado_digemid == 5){
+                $request->nombre_comercial = $request->nombre_dni;
+            }
+
+            if ($request->estado_digemid == 1 || $request->estado_digemid == 2 || $request->estado_digemid == 3) {
+                $registro_exist = RegistroDigemid::where("nregistro","=",$request->nregistro)->first();
+                if($registro_exist){
+                    if($registro_exist->getSucursalHandleRegistro->id != $id){
+                        return response() -> json([
+                            "message" => 403,
+                            "message_text" => "el numero de registro ".$request->nregistro." ya esta siendo usado.",
+                        ],422);
+                    }
+                }else{
+                    $registro_exist = RegistroDigemid::create([
+                        'nregistro' => $request->nregistro,
+                    ]);
+                }
+            }
+
+            if($request->image){
+                $image_exist = ClientesSucursales::where('image','=',$request->image);
+                if(!$image_exist){
+                    $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(),[
+                        'folder' => 'ClienteSucursales',  // Nombre de la carpeta en Cloudinary
+                    ]);
+                    $imageUrl = $uploadedFile->getSecurePath();
+                    $imagePublicId = $uploadedFile->getPublicId();
+                }
+            }
+
+            if($request->documento_en_proceso){
+                $documento_en_proceso_exist = ClientesSucursales::where('documento_en_proceso','=',$request->documento_en_proceso);
+                if(!$documento_en_proceso_exist){
+                    $uploadedFile = Cloudinary::upload($request->file('documento_en_proceso')->getRealPath(),[
+                        'folder' => 'ActasInspeccionDigemid',  // Nombre de la carpeta en Cloudinary
+                    ]);
+                    $documentUrl  = $uploadedFile->getSecurePath();
+                    $documentPublicId = $uploadedFile->getPublicId();
+                }
+            }
+            $sucursal = ClientesSucursales::findOrFail($id);
+            $sucursal -> update([
+                'ruc_id' => $ruc_exist->id,
+                'nombre_comercial' => $request->nombre_comercial,
+                'direccion' => $request->direccion,
+                'distrito' => $request->distrito,
+                'categoria_digemid_id' => $request->categoria_digemid,
+                'estado_digemid' => $request->estado_digemid,
+                'nregistro_id' => $registro_exist->id ?? null,
+                'image' => isset($imageUrl) ? $imageUrl : $sucursal->image,
+                'image_public_id' => isset($imagePublicId) ? $imagePublicId : $sucursal->image_public_id,
+                'documento_en_proceso' => isset($documentUrl) ? $documentUrl : $sucursal->documento_en_proceso,
+                'documento_en_proceso_public_id' => isset($documentPublicId) ? $documentPublicId : $sucursal->documento_en_proceso_public_id,
+            ]);
+
+            $lugar_exist = lugarEntrega::where('address',"=",$request->direccion)
+                                        ->where('distrito_id','=',$request->distrito)
+                                        ->first(); 
+            if(!$lugar_exist){
+                lugarEntrega::create([
+                    'sucursal_id' => $sucursal->id,
+                    'address' => $sucursal->direccion,
+                    'distrito_id' => $sucursal->distrito,
+                    'latitud' => $request->latitud,
+                    'longitud'=> $request->longitud,
+                ]);
+            }
+
+            if ($request->correo) {
+                CorreoSucursal::firstOrCreate([
+                    'ruc_id' => $ruc_exist->id,
+                    'cliente_sucursal_id' => $sucursal->id,
+                    'correo_id' => $correo_exist->id
+                ],
+        [
+                    'ruc_id' => $ruc_exist->id,
+                    'cliente_sucursal_id' => $sucursal->id,
+                    'correo_id' => $correo_exist->id
+                ]);
+            }
+
+            if ($request->celular) {
+                CorreoSucursal::firstOrCreate([
+                    'ruc_id' => $ruc_exist->id,
+                    'cliente_sucursal_id' => $sucursal->id,
+                    'celular_id' => $celular_exist->id,
+                ],
+        [
+                    'ruc_id' => $ruc_exist->id,
+                    'cliente_sucursal_id' => $sucursal->id,
+                    'celular_id' => $celular_exist->id,
+                ]);
+            }
+
+            if ($request->estado_digemid == 2 || $request->estado_digemid == 3 || $request->estado_digemid == 4 || $request->estado_digemid == 5) {
+                // Buscar el registro existente
+                $existingDniSucursal = DniSucursal::where('ruc_id', $ruc_exist->id)
+                                                   ->where('cliente_sucursal_id',$sucursal->id)
+                                                   ->first();
+                
+                // Si existe, actualiza el dni
+                if ($existingDniSucursal) {
+                    $existingDniSucursal->update([
+                        'ruc_id' => $ruc_exist->id,
+                        'cliente_sucursal_id' => $sucursal->id,
+                        'dni_id' => $dni_exist->id,
+                    ]);
+                }else{
+                    // Crear el nuevo registro
+                    DniSucursal::create([
+                        'ruc_id' => $ruc_exist->id,
+                        'cliente_sucursal_id' => $sucursal->id,
+                        'dni_id' => $dni_exist->id,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                "cliente_sucursal" => [
+                    "id" => $sucursal->id,
+                    "ruc" => $sucursal->ruc ? $sucursal->ruc->ruc : null,
+                    "razon_social" => $sucursal->ruc ? $sucursal->ruc->razonSocial : null,
+                    "state" => $sucursal->state ?? 1,
+                    "created_at" => $sucursal->created_at->format("Y-m-d h:i A"),
+                    "nombre_comercial" => $sucursal->nombre_comercial,
+                    "estado_digemid"=> $sucursal->estado_digemid,
+                    "nombre_estado_digemid"=> $sucursal->getEstadoDigemid->nombre,
+                    "direccion" => $sucursal->direccion,
+                    "deuda" => $sucursal->deuda ?? 0.0,
+                    "linea_credito" => $sucursal->linea_credito ?? 0.0,
+                    "modo_trabajo" => $sucursal->modo_trabajo,
+                    "distrito" => $sucursal->distrito ? $sucursal->getNameDistrito->name : null, // Accedemos al nombre del distrito
+                    "provincia" => $sucursal->distrito && $sucursal->getNameDistrito->provincia ? $sucursal->getNameDistrito->provincia->name : null, // Accedemos al nombre de la provincia
+                    "departamento" => $sucursal->distrito && $sucursal->getNameDistrito->provincia && $sucursal->getNameDistrito->provincia->departamento ? $sucursal->getNameDistrito->provincia->departamento->name : null, // Accedemos al nombre del departamento
+                    "categoria_digemid" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->nombre : null,
+                    "categoria_digemid_id" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->id : null,
+                    "nregistro" => $sucursal->nregistro_id ? $sucursal->getRegistro->nregistro : null,
+
+                    "celulares" => $sucursal->getCelular->map(function($celularSucursal) {
+                        return $celularSucursal->getNumberCelular ? $celularSucursal->getNumberCelular->celular : null;
+                    }),
+
+                    "correos" => $sucursal->getCorreo->map(function($correo) {
+                        return $correo->correo ? $correo->correo->correo : null;
+                    }),
+
+                    "dni" => $sucursal->getDni ? [
+                        "dni_id" => $sucursal->getDni->dni->id,
+                        "numero" => $sucursal->getDni->dni->numero,
+                        "nombre_dni" => $sucursal->getDni->dni->nombre,
+                    ] : null,
+
+                    "coordenadas_" => $sucursal->getDirecciones->map(function($lugarEntrega) {
+                        return [
+                            "latitud" => $lugarEntrega->latitud, // latitud de la dirección
+                            "longitud" => $lugarEntrega->longitud, // longitud de la dirección
+                            "address" => $lugarEntrega->address, // dirección del lugar
+                        ];
+                    }),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            // Si ocurre algún error, hacemos rollback de la transacción
+            DB::rollBack();
+    
+            // Devolvemos el error al usuario
+            return response()->json([
+                'error' => 'Ocurrió un error, por favor intente de nuevo.',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

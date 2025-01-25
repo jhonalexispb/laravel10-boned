@@ -99,7 +99,8 @@ class ClientesSucursales extends Model
 
     public function getDni()
     {
-        return $this->hasOne(DniSucursal::class, 'cliente_sucursal_id');
+        return $this->hasOne(DniSucursal::class, 'cliente_sucursal_id')
+        ->with('dni');
     }
 
     public function getRegistro()
