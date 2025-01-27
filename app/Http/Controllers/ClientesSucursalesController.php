@@ -288,12 +288,11 @@ class ClientesSucursalesController extends Controller
                         return $correo->correo ? $correo->correo->correo : null;
                     }),
 
-                    "dni" => $sucursal->getDni->map(function($dniSucursal) {
-                        return [
-                            "numero" => $dniSucursal->dni->numero, // Obtén el número de DNI desde la relación
-                            "nombre_dni" => $dniSucursal->dni->nombre,
-                        ];
-                    }),
+                    "dni" => $sucursal->getDni ? [
+                        "dni_id" => $sucursal->getDni->dni->id,
+                        "numero" => $sucursal->getDni->dni->numero,
+                        "nombre_dni" => $sucursal->getDni->dni->nombre,
+                    ] : null,
 
                     "coordenadas_" => $sucursal->getDirecciones->map(function($lugarEntrega) {
                         return [
