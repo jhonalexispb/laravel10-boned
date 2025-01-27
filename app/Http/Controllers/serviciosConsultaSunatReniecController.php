@@ -51,6 +51,7 @@ class serviciosConsultaSunatReniecController extends Controller
                     return response()->json([
                         "message_text" => "felicidades, crearas un nuevo cliente",
                         "razonSocial" => $response['razonSocial'] ?? 'No disponible',
+                        "response" => $response,
                         "message" => "new"
                     ]);
                 } else {

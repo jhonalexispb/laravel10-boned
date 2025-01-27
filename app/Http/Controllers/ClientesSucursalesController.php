@@ -13,6 +13,7 @@ use App\Models\ClienteSucursalAtributtes\CorreoSucursal;
 use App\Models\ClienteSucursalAtributtes\Dni;
 use App\Models\ClienteSucursalAtributtes\DniSucursal;
 use App\Models\ClienteSucursalAtributtes\EstadoDigemid;
+use App\Models\ClienteSucursalAtributtes\ModoFacturacion;
 use App\Models\ClienteSucursalAtributtes\RegistroDigemid;
 use App\Models\Configuration\Distrito;
 use App\Models\configuration\lugarEntrega;
@@ -31,7 +32,7 @@ class ClientesSucursalesController extends Controller
 
         $cliente_sucursal = ClientesSucursales::when($search, function($query, $search) {
             return $query->where('id', '=', $search);
-        })
+        }, )
         ->orderBy('id', 'desc')
         ->paginate(25);
 
@@ -40,6 +41,7 @@ class ClientesSucursalesController extends Controller
             "cliente_sucursales" => $cliente_sucursal->map(function($d){
                 return [
                     "id" => $d->id,
+                    "sucursal_name_complete" => $d->ruc->ruc.' '.$d->ruc->razonSocial.' '.$d->nombre_comercial.' '.$d->direccion.' '.$d->getNameDistrito->name.' '.$d->getNameDistrito->provincia->name.' '.$d->getNameDistrito->provincia->departamento->name,
                     "ruc" => $d->ruc ? $d->ruc->ruc : null,
                     "ruc_id" => $d->ruc ? $d->ruc->id : null,
                     "razon_social" => $d->ruc ? $d->ruc->razonSocial : null,
@@ -274,11 +276,14 @@ class ClientesSucursalesController extends Controller
                     "linea_credito" => $sucursal->linea_credito ?? 0.0,
                     "modo_trabajo" => $sucursal->modo_trabajo,
                     "distrito" => $sucursal->distrito ? $sucursal->getNameDistrito->name : null, // Accedemos al nombre del distrito
+                    "distrito_id" => $sucursal->distrito ? $sucursal->getNameDistrito->id : null,
                     "provincia" => $sucursal->distrito && $sucursal->getNameDistrito->provincia ? $sucursal->getNameDistrito->provincia->name : null, // Accedemos al nombre de la provincia
                     "departamento" => $sucursal->distrito && $sucursal->getNameDistrito->provincia && $sucursal->getNameDistrito->provincia->departamento ? $sucursal->getNameDistrito->provincia->departamento->name : null, // Accedemos al nombre del departamento
                     "categoria_digemid" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->nombre : null,
                     "categoria_digemid_id" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->id : null,
                     "nregistro" => $sucursal->nregistro_id ? $sucursal->getRegistro->nregistro : null,
+                    "image" => $sucursal->image ? $sucursal->image : null,
+                    "documento_en_proceso" => $sucursal->documento_en_proceso ? $sucursal->documento_en_proceso : null,
 
                     "celulares" => $sucursal->getCelular->map(function($celularSucursal) {
                         return $celularSucursal->getNumberCelular ? $celularSucursal->getNumberCelular->celular : null;
@@ -439,25 +444,41 @@ class ClientesSucursalesController extends Controller
                 }
             }
 
-            if($request->image){
-                $image_exist = ClientesSucursales::where('image','=',$request->image);
+            if($request->hasFile('image')){
+                $image_exist = ClientesSucursales::where('image','=',$request->image)->exists();
                 if(!$image_exist){
-                    $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(),[
-                        'folder' => 'ClienteSucursales',  // Nombre de la carpeta en Cloudinary
-                    ]);
-                    $imageUrl = $uploadedFile->getSecurePath();
-                    $imagePublicId = $uploadedFile->getPublicId();
+                    try {
+                        // Subir la imagen a Cloudinary
+                        $uploadedFile = Cloudinary::upload($request->file('image')->getRealPath(), [
+                            'folder' => 'ClienteSucursales',  // Nombre de la carpeta en Cloudinary
+                        ]);
+                        $imageUrl = $uploadedFile->getSecurePath();
+                        $imagePublicId = $uploadedFile->getPublicId();
+                    } catch (\Exception $e) {
+                        // Capturar cualquier error y retornar un mensaje
+                        return response()->json([
+                            'error' => 'Error al subir la imagen: ' . $e->getMessage()
+                        ], 500);
+                    }
                 }
             }
 
-            if($request->documento_en_proceso){
-                $documento_en_proceso_exist = ClientesSucursales::where('documento_en_proceso','=',$request->documento_en_proceso);
+            if($request->hasFile('documento_en_proceso')){
+                $documento_en_proceso_exist = ClientesSucursales::where('documento_en_proceso','=',$request->documento_en_proceso)->exists();;
                 if(!$documento_en_proceso_exist){
-                    $uploadedFile = Cloudinary::upload($request->file('documento_en_proceso')->getRealPath(),[
-                        'folder' => 'ActasInspeccionDigemid',  // Nombre de la carpeta en Cloudinary
-                    ]);
-                    $documentUrl  = $uploadedFile->getSecurePath();
-                    $documentPublicId = $uploadedFile->getPublicId();
+                    try {
+                        // Subir el documento a Cloudinary
+                        $uploadedFile = Cloudinary::upload($request->file('documento_en_proceso')->getRealPath(), [
+                            'folder' => 'ActasInspeccionDigemid',  // Nombre de la carpeta en Cloudinary
+                        ]);
+                        $documentUrl = $uploadedFile->getSecurePath();
+                        $documentPublicId = $uploadedFile->getPublicId();
+                    } catch (\Exception $e) {
+                        // Capturar cualquier error y retornar un mensaje
+                        return response()->json([
+                            'error' => 'Error al subir el documento: ' . $e->getMessage()
+                        ], 500);
+                    }
                 }
             }
             $sucursal = ClientesSucursales::findOrFail($id);
@@ -554,11 +575,14 @@ class ClientesSucursalesController extends Controller
                     "linea_credito" => $sucursal->linea_credito ?? 0.0,
                     "modo_trabajo" => $sucursal->modo_trabajo,
                     "distrito" => $sucursal->distrito ? $sucursal->getNameDistrito->name : null, // Accedemos al nombre del distrito
+                    "distrito_id" => $sucursal->distrito ? $sucursal->getNameDistrito->id : null,
                     "provincia" => $sucursal->distrito && $sucursal->getNameDistrito->provincia ? $sucursal->getNameDistrito->provincia->name : null, // Accedemos al nombre de la provincia
                     "departamento" => $sucursal->distrito && $sucursal->getNameDistrito->provincia && $sucursal->getNameDistrito->provincia->departamento ? $sucursal->getNameDistrito->provincia->departamento->name : null, // Accedemos al nombre del departamento
                     "categoria_digemid" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->nombre : null,
                     "categoria_digemid_id" => $sucursal->categoriaDigemid ? $sucursal->categoriaDigemid->id : null,
                     "nregistro" => $sucursal->nregistro_id ? $sucursal->getRegistro->nregistro : null,
+                    "image" => $sucursal->image ? $sucursal->image : null,
+                    "documento_en_proceso" => $sucursal->documento_en_proceso ? $sucursal->documento_en_proceso : null,
 
                     "celulares" => $sucursal->getCelular->map(function($celularSucursal) {
                         return $celularSucursal->getNumberCelular ? $celularSucursal->getNumberCelular->celular : null;
@@ -668,4 +692,24 @@ class ClientesSucursalesController extends Controller
             
         ]);
     }  
+
+    public function getRecursosParaGestionar(string $id)
+    {   
+        $modos_facturacion = ModoFacturacion::where("state",1)->get();
+        $datos_sucursal = ClientesSucursales::where("id","=",$id)->first();
+        return response()->json([
+            "modos_facturacion" => $modos_facturacion->map(function($d) {
+                return [
+                    "id" => $d->id,
+                    "nombre" => $d->nombre,
+                    "dias" => $d->dias
+                ];
+            }),
+            "datos_sucursal" => [
+                "modo_facturacion" => $datos_sucursal->modo_facturacion,
+                "dias" => $datos_sucursal->dias,
+                "forma_pago" => $datos_sucursal->formaPago
+            ]
+        ]);
+    } 
 }
