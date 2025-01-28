@@ -30,17 +30,20 @@ class ClientesSucursales extends Model
         "nombre_comercial",
         "direccion",
         "distrito",
-        "celular",
-        "correo",
-        "ubicacion",
         "deuda",
         "linea_credito",
         "modo_trabajo",
         "categoria_digemid_id",
         "estado_digemid",
-        "state",
+        "image",
+        "image_public_id",
         "nregistro_id",
         "documento_en_proceso",
+        "documento_en_proceso_public_id",
+        "state",
+        "modo_facturacion_id",
+        "dias",
+        "formaPago"
     ];
 
     public function getActivitylogOptions(): LogOptions

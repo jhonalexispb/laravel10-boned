@@ -7,6 +7,7 @@ use App\Models\Cliente;
 use App\Models\ClientesSucursales;
 use App\Models\ClienteSucursalAtributtes\Celular;
 use App\Models\ClienteSucursalAtributtes\CelularSucursal;
+use App\Models\ClienteSucursalAtributtes\ConfigurationClienteSucursal;
 use App\Models\ClienteSucursalAtributtes\ConversorEstadoDigemid;
 use App\Models\ClienteSucursalAtributtes\Correo;
 use App\Models\ClienteSucursalAtributtes\CorreoSucursal;
@@ -50,6 +51,7 @@ class ClientesSucursalesController extends Controller
                     "nombre_comercial" => $d->nombre_comercial,
                     "direccion" => $d->direccion,
                     "deuda" => $d->deuda,
+                    "formaPago" => $d->formaPago,
                     "linea_credito" => $d->linea_credito,
                     "modo_trabajo" => $d->modo_trabajo,
                     "estado_digemid"=> $d->estado_digemid,
@@ -225,6 +227,8 @@ class ClientesSucursalesController extends Controller
                 'image_public_id' => isset($imagePublicId) ? $imagePublicId : null,
                 'documento_en_proceso' => isset($documentUrl) ? $documentUrl : null,
                 'documento_en_proceso_public_id' => isset($documentPublicId) ? $documentPublicId : null,
+                'dias' => ConfigurationClienteSucursal::where('nombre', 'dias_creacion')->value('valor') ?? 30,
+                'linea_credito' => ConfigurationClienteSucursal::where('nombre', 'linea_credito')->value('valor') ?? 2000,
             ]);
 
             lugarEntrega::create([
@@ -273,6 +277,7 @@ class ClientesSucursalesController extends Controller
                     "nombre_estado_digemid"=> $sucursal->getEstadoDigemid->nombre,
                     "direccion" => $sucursal->direccion,
                     "deuda" => $sucursal->deuda ?? 0.0,
+                    "formaPago" => $sucursal->formaPago ?? 3, 
                     "linea_credito" => $sucursal->linea_credito ?? 0.0,
                     "modo_trabajo" => $sucursal->modo_trabajo,
                     "distrito" => $sucursal->distrito ? $sucursal->getNameDistrito->name : null, // Accedemos al nombre del distrito
@@ -571,8 +576,9 @@ class ClientesSucursalesController extends Controller
                     "estado_digemid"=> $sucursal->estado_digemid,
                     "nombre_estado_digemid"=> $sucursal->getEstadoDigemid->nombre,
                     "direccion" => $sucursal->direccion,
-                    "deuda" => $sucursal->deuda ?? 0.0,
-                    "linea_credito" => $sucursal->linea_credito ?? 0.0,
+                    "deuda" => $sucursal->deuda,
+                    "formaPago" => $sucursal->formaPago, 
+                    "linea_credito" => $sucursal->linea_credito,
                     "modo_trabajo" => $sucursal->modo_trabajo,
                     "distrito" => $sucursal->distrito ? $sucursal->getNameDistrito->name : null, // Accedemos al nombre del distrito
                     "distrito_id" => $sucursal->distrito ? $sucursal->getNameDistrito->id : null,
@@ -625,6 +631,41 @@ class ClientesSucursalesController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function gestionarSucursal(Request $request, string $id)
+    {
+        $request->validate([
+            'formaPago' => 'required|numeric|in:1,2,3',  // Solo números del 1 al 3
+            'dias' => 'required|numeric|gte:0',  // Debe ser mayor que 0
+            'modo_facturacion_id' => 'required|exists:formas_facturacion_cliente,id',  // Debe existir en la tabla formas_facturacion_cliente
+            'linea_credito' => 'required|numeric|gte:0',  // No debe ser menor que 0
+        ]);
+
+        try {
+            $sucursal = ClientesSucursales::findOrFail($id);
+            $sucursal -> update([
+                'formaPago' => $request->formaPago,
+                'dias' => $request->dias,
+                'modo_facturacion_id' => $request->modo_facturacion_id,
+                'linea_credito' => $request->linea_credito,
+            ]);
+
+            return response()->json([
+                "sucursal_gestionada" => [
+                    "formaPago" => $sucursal->formaPago,
+                    "dias" => $sucursal->dias,
+                    "modo_facturacion_id" => $sucursal->modo_facturacion_id,
+                    "linea_credito" => $sucursal->linea_credito,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            // Devolvemos el error al usuario
+            return response()->json([
+                'error' => 'Ocurrió un error, por favor intente de nuevo.',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function getRecursos()
@@ -706,7 +747,7 @@ class ClientesSucursalesController extends Controller
                 ];
             }),
             "datos_sucursal" => [
-                "modo_facturacion" => $datos_sucursal->modo_facturacion,
+                "modo_facturacion" => $datos_sucursal->modo_facturacion_id,
                 "dias" => $datos_sucursal->dias,
                 "forma_pago" => $datos_sucursal->formaPago
             ]
