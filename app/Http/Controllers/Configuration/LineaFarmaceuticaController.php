@@ -24,7 +24,8 @@ class LineaFarmaceuticaController extends Controller
                     "nombre" => $d->nombre,
                     "status" => $d->status,
                     "imagen" => $d->imagen,
-                    "imagen_public" => $d->imagen_public
+                    "imagen_public" => $d->imagen_public,
+                    "created_at" => $d->created_at->format("Y-m-d h:i A")
                 ];
             })
         ]);
@@ -86,9 +87,10 @@ class LineaFarmaceuticaController extends Controller
             "linea_farmaceutica" => [
                 "id" => $linea->id,
                 "nombre" => $linea->nombre,
-                "state" => $linea->status ?? 1,
+                "status" => $linea->status ?? 1,
                 "imagen" => $linea->imagen,
-                "imagen_public" => $linea->imagen_public
+                "imagen_public" => $linea->imagen_public,
+                "created_at" => $linea->created_at->format("Y-m-d h:i A")
             ],
         ]);
     }
@@ -120,7 +122,7 @@ class LineaFarmaceuticaController extends Controller
                 return response() -> json([
                     "message" => 409,
                     "message_text" => "la linea farmaceutica ".$LINEA_EXIST->nombre." ya existe pero se encuentra eliminada, ¿Deseas restaurarla?",
-                    "fabricante" => $LINEA_EXIST->id
+                    "linea_farmaceutica" => $LINEA_EXIST->id
                 ]);
             }
             return response() -> json([
@@ -158,9 +160,10 @@ class LineaFarmaceuticaController extends Controller
             "linea_farmaceutica" => [
                 "id" => $linea->id,
                 "nombre" => $linea->nombre,
-                "state" => $linea->status ?? 1,
+                "status" => $linea->status ?? 1,
                 "imagen" => $linea->imagen,
-                "imagen_public" => $linea->imagen_public
+                "imagen_public" => $linea->imagen_public,
+                "created_at" => $linea->created_at->format("Y-m-d h:i A")
             ],
         ]);
     }
@@ -189,12 +192,13 @@ class LineaFarmaceuticaController extends Controller
             return response()->json([
                 'message' => 200,
                 "message_text" => "la linea farmaceutica ".$linea->nombre." fue restaurada de manera satisfactoria",
-                "laboratorio_restaurado" => [
+                "linea_farmaceutica_restaurada" => [
                     "id" => $linea->id,
                     "nombre" => $linea->nombre,
-                    "state" => $linea->status ?? 1,
+                    "status" => $linea->status ?? 1,
                     "imagen" => $linea->imagen,
-                    "imagen_public" => $linea->imagen_public
+                    "imagen_public" => $linea->imagen_public,
+                    "created_at" => $linea->created_at->format("Y-m-d h:i A")
                 ],
             ]);
         }

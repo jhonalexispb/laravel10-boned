@@ -88,7 +88,7 @@ class FabricanteProductoController extends Controller
             "fabricante" => [
                 "id" => $fabricante->id,
                 "nombre" => $fabricante->nombre,
-                "state" => $fabricante->status ?? 1,
+                "status" => $fabricante->status ?? 1,
                 "pais" => $fabricante->pais ?? 'Sin pais',
                 "imagen" => $fabricante->imagen,
                 "imagen_public" => $fabricante->imagen_public,
@@ -163,7 +163,7 @@ class FabricanteProductoController extends Controller
             "fabricante" => [
                 "id" => $fabricante->id,
                 "nombre" => $fabricante->nombre,
-                "state" => $fabricante->status ?? 1,
+                "status" => $fabricante->status ?? 1,
                 "pais" => $fabricante->pais ?? 'Sin pais',
                 "imagen" => $fabricante->imagen,
                 "imagen_public" => $fabricante->imagen_public,
@@ -199,7 +199,7 @@ class FabricanteProductoController extends Controller
                 "fabricante_restaurado" => [
                     "id" => $fabricante->id,
                     "nombre" => $fabricante->nombre,
-                    "state" => $fabricante->status ?? 1,
+                    "status" => $fabricante->status ?? 1,
                     "pais" => $fabricante->pais ?? 'Sin pais',
                     "imagen" => $fabricante->imagen,
                     "imagen_public" => $fabricante->imagen_public,
