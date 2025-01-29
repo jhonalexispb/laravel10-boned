@@ -19,6 +19,15 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
+
+        // Insertar el valor predeterminado
+        DB::table('formas_facturacion_cliente')->insert([
+            'nombre' => 'NORMAL',
+            'dias' => 30,
+            'state' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**

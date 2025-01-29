@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('fabricantes_producto', function (Blueprint $table) {
             $table->id();
             $table->string('nombre');
-            $table->integer('pais')->nullable();
+            $table->string('pais')->nullable();
             $table->boolean('status')->default(1);
             $table->string('imagen')->nullable();
             $table->string('imagen_public_id')->nullable();

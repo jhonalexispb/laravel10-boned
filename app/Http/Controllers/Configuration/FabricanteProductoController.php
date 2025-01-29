@@ -25,7 +25,8 @@ class FabricanteProductoController extends Controller
                     "status" => $d->status,
                     "pais" => $d->pais ?? 'Sin pais',
                     "imagen" => $d->imagen,
-                    "imagen_public" => $d->imagen_public
+                    "imagen_public" => $d->imagen_public,
+                    "created_at" => $d->created_at->format("Y-m-d h:i A")
                 ];
             })
         ]);
@@ -90,7 +91,8 @@ class FabricanteProductoController extends Controller
                 "state" => $fabricante->status ?? 1,
                 "pais" => $fabricante->pais ?? 'Sin pais',
                 "imagen" => $fabricante->imagen,
-                "imagen_public" => $fabricante->imagen_public
+                "imagen_public" => $fabricante->imagen_public,
+                "created_at" => $fabricante->created_at->format("Y-m-d h:i A")
             ],
         ]);
     }
@@ -164,7 +166,8 @@ class FabricanteProductoController extends Controller
                 "state" => $fabricante->status ?? 1,
                 "pais" => $fabricante->pais ?? 'Sin pais',
                 "imagen" => $fabricante->imagen,
-                "imagen_public" => $fabricante->imagen_public
+                "imagen_public" => $fabricante->imagen_public,
+                "created_at" => $fabricante->created_at->format("Y-m-d h:i A")
             ],
         ]);
     }
@@ -199,7 +202,8 @@ class FabricanteProductoController extends Controller
                     "state" => $fabricante->status ?? 1,
                     "pais" => $fabricante->pais ?? 'Sin pais',
                     "imagen" => $fabricante->imagen,
-                    "imagen_public" => $fabricante->imagen_public
+                    "imagen_public" => $fabricante->imagen_public,
+                    "created_at" => $fabricante->created_at->format("Y-m-d h:i A")
                 ],
             ]);
         }
@@ -214,12 +218,12 @@ class FabricanteProductoController extends Controller
     public function getRecursos()
     {
         return response()->json([
-            "nombres_paises" => FabricanteProducto::select('nombre') 
+            "nombres_paises" => FabricanteProducto::select('pais') 
             ->distinct()  // Obtiene solo valores únicos
             ->get()
             ->map(function ($p) {
                 return [
-                    "nombre" => $p->nombre,
+                    "nombre" => $p->pais,
                 ];
             })
         ]);
