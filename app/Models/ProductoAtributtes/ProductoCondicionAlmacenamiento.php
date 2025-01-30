@@ -1,24 +1,23 @@
 <?php
 
-namespace App\Models\Configuration;
+namespace App\Models\ProductoAtributtes;
 
 use App\Models\Producto;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
-class CategoriaProducto extends Model
+class ProductoCondicionAlmacenamiento extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
-    protected $table = "categoria";
+    protected $table = "producto_cond_almac_relation";
     protected $fillable = [
-        "name",
-        "image",
-        "state",
+        "producto_id",
+        "cond_almac_id",
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -27,7 +26,7 @@ class CategoriaProducto extends Model
         return LogOptions::defaults()
             ->logAll()  // Si deseas registrar todos los cambios
             ->logOnlyDirty()  // Opción de solo registrar cambios realizados (no todos los atributos)
-            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} CategoriaProducto");
+            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Unidades");
     }
 
     public function setCreatedAtAttribute($value){
@@ -40,8 +39,11 @@ class CategoriaProducto extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
 
-    public function producto()
-    {
-        return $this->belongsToMany(Producto::class, 'producto_categoria_relation', 'categoria_id', 'producto_id');
+    public function product(){
+        return $this->belongsTo(Producto::class,"producto_id");
+    }
+
+    public function condicion_almacenamiento(){
+        return $this->belongsTo(CondicionAlmacenamiento::class,"cond_almac_id");
     }
 }

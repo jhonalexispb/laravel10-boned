@@ -12,20 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('formas_facturacion_cliente', function (Blueprint $table) {
+        Schema::create('condicion_almacenamiento', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre');
-            $table->integer('dias');
-            $table->boolean('state')->default(1);
+            $table->string('name');
             $table->timestamps();
             $table->softDeletes();
         });
 
         // Insertar el valor predeterminado
-        DB::table('formas_facturacion_cliente')->insert([
-            'nombre' => 'NORMAL',
-            'dias' => 30,
-            'state' => 1,
+        DB::table('condicion_almacenamiento')->insert([
+            'name' => 'NO MAYOR A 30° C',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -36,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('formas_facturacion_cliente');
+        Schema::dropIfExists('condicion_almacenamiento');
     }
 };

@@ -12,20 +12,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('formas_facturacion_cliente', function (Blueprint $table) {
+        Schema::create('unidades', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre');
-            $table->integer('dias');
-            $table->boolean('state')->default(1);
+            $table->string('name');
+            $table->string('abreviatura');
             $table->timestamps();
             $table->softDeletes();
         });
 
         // Insertar el valor predeterminado
-        DB::table('formas_facturacion_cliente')->insert([
-            'nombre' => 'NORMAL',
-            'dias' => 30,
-            'state' => 1,
+        DB::table('unidades')->insert([
+            'name' => 'UNIDAD',
+            'abreviatura' => 'NIU',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -36,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('formas_facturacion_cliente');
+        Schema::dropIfExists('unidades');
     }
 };
