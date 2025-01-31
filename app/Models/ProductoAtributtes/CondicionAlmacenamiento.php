@@ -13,7 +13,7 @@ class CondicionAlmacenamiento extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
-    protected $table = "condicion_almacenamiento0";
+    protected $table = "condicion_almacenamiento";
     protected $fillable = [
         "name",
     ];

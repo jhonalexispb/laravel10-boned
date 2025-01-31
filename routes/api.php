@@ -23,6 +23,7 @@ require __DIR__.'/routes/clienteSucursales.php';
 require __DIR__.'/routes/serviciosSunatReniec.php';
 require __DIR__.'/routes/fabricantes-productos.php';
 require __DIR__.'/routes/lineas_farmaceuticas.php';
+require __DIR__.'/routes/productos.php';
 
 /*
 |--------------------------------------------------------------------------
