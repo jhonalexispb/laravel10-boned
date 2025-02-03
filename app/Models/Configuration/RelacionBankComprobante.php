@@ -2,8 +2,6 @@
 
 namespace App\Models\Configuration;
 
-use App\Models\ComprobantePago;
-use App\Models\configuration\Bank;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,25 +14,14 @@ class RelacionBankComprobante extends Model
     protected $table = 'relacion_bank_comprobante';
 
     protected $fillable = [
-        'idBanco',
-        'idComprobantePago',
-        'tipoCaracter',
+        'id_banco',
+        'id_comprobante_pago',
+        'tipo_caracter',
         'ncaracteres',
-        'nombre',
-        'ubicacionCodigo',
-        'imgEjemplo',
+        'ubicacion_codigo',
+        'img_ejemplo',
         'state'
     ];
-
-    public function bank()
-    {
-        return $this->belongsTo(Bank::class, 'idBanco');
-    }
-
-    public function comprobantePago()
-    {
-        return $this->belongsTo(ComprobantePago::class, 'idComprobantePago');
-    }
 
     public function setCreatedAtAttribute($value){
         date_default_timezone_set("America/Lima");
@@ -44,5 +31,15 @@ class RelacionBankComprobante extends Model
     public function setUpdatedAtAttribute($value){
         date_default_timezone_set("America/Lima");
         $this->attributes["updated_at"] = Carbon::now();
+    }
+
+    public function banco()
+    {
+        return $this->belongsTo(Bank::class, 'id_banco');
+    }
+
+    public function comprobante()
+    {
+        return $this->belongsTo(ComprobantePago::class, 'id_comprobante_pago');
     }
 }

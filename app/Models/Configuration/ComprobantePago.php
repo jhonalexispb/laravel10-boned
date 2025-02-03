@@ -28,4 +28,8 @@ class ComprobantePago extends Model
         date_default_timezone_set("America/Lima");
         $this->attributes["updated_at"] = Carbon::now();
     }
+
+    public function getBancos(){
+        return $this->belongsToMany(ComprobantePago::class,'relacion_bank_comprobante','id_comprobante_pago','id_banco');
+    }
 }

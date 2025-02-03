@@ -29,7 +29,7 @@ class Bank extends Model
         return LogOptions::defaults()
             ->logAll()  // Si deseas registrar todos los cambios
             ->logOnlyDirty()  // Opción de solo registrar cambios realizados (no todos los atributos)
-            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} CategoriaProducto");
+            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Bank");
     }
 
     public function setCreatedAtAttribute($value){
@@ -40,5 +40,9 @@ class Bank extends Model
     public function setUpdatedAtAttribute($value){
         date_default_timezone_set("America/Lima");
         $this->attributes["updated_at"] = Carbon::now();
+    }
+
+    public function getComprobantes(){
+        return $this->belongsToMany(ComprobantePago::class,'relacion_bank_comprobante','id_banco','id_comprobante_pago');
     }
 }

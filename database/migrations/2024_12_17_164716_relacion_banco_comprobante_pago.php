@@ -13,13 +13,12 @@ return new class extends Migration
     {
         Schema::create('relacion_bank_comprobante', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('idBanco')->constrained('bank')->onDelete('restrict');
-            $table->foreignId('idComprobantePago')->constrained('comprobante_pago')->onDelete('restrict');
-            $table->string('tipoCaracter', 50);
+            $table->foreignId('id_banco')->constrained('bank')->onDelete('restrict');
+            $table->foreignId('id_comprobante_pago')->constrained('comprobante_pago')->onDelete('restrict');
+            $table->boolean('tipo_caracter')->default(1)->comment('1 es numeros, y 2 es numeros y letras');
             $table->integer('ncaracteres');
-            $table->string('nombre')->nullable();
-            $table->string('ubicacionCodigo')->nullable();
-            $table->string('imgEjemplo')->nullable();
+            $table->string('ubicacion_codigo')->nullable();
+            $table->string('img_ejemplo')->nullable();
             $table->boolean('state')->default(1);
             $table->timestamps();
             $table->softDeletes();

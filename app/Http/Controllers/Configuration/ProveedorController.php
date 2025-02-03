@@ -226,7 +226,7 @@ class ProveedorController extends Controller
 
         $distritos = Distrito::with('provincia.departamento')->get();
 
-        $representante = RepresentanteProveedor::all();
+        $representante = RepresentanteProveedor::where('state',1)->get();
 
         return response()->json([
             
@@ -245,5 +245,5 @@ class ProveedorController extends Controller
                 ];
             })
         ]);
-    }   
+    }     
 }
