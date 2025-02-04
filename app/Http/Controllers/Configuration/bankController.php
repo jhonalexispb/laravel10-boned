@@ -19,7 +19,7 @@ class bankController extends Controller
         $search = $request->get('search');
 
         $bank = ConfigurationBank::where("name","like","%".$search."%")
-                                /* ->with('getComprobantes') */
+                                ->with('getComprobantes')
                                 ->orderBy("id","desc")
                                 ->paginate(25);
         return response()->json([
@@ -31,15 +31,21 @@ class bankController extends Controller
                     "image" => $b->image ? env("APP_URL")."storage/".$b->image : null,
                     "state" => $b->state,
                     "created_at" => $b->created_at->format("Y-m-d h:i A"),
-                    /* "comprobantes" => $b->getComprobantes->map(function($comprobante) {
+                    "comprobantes" => $b->getComprobantes->map(function($comprobanteRel) {
                         return [
-                            "tipo_caracter" => $comprobante->tipo_caracter,
-                            "ncaracteres" => $comprobante->ncaracteres,
-                            "ubicacion_codigo" => $comprobante->ubicacion_codigo,
-                            "img_ejemplo" => $comprobante->img_ejemplo,
-                            "state_relacion" => $comprobante->state,
+                            "id_relacion" => $comprobanteRel->id,
+                            "tipo_caracter" => $comprobanteRel->tipo_caracter,
+                            "ncaracteres" => $comprobanteRel->ncaracteres,
+                            "ubicacion_codigo" => $comprobanteRel->ubicacion_codigo,
+                            "img_ejemplo" => $comprobanteRel->img_ejemplo,
+                            "state_relacion" => $comprobanteRel->state,
+                            "created_at_relacion" => $comprobanteRel->created_at->format("Y-m-d h:i A"),
+                            "comprobante" => [
+                                "id" => $comprobanteRel->comprobante->id, // Aquí accedes a los datos del comprobante
+                                "name" => $comprobanteRel->comprobante->name,
+                            ]
                         ];
-                    }) */
+                    })
                 ];
             })
         ]);
@@ -72,6 +78,21 @@ class bankController extends Controller
                 "image" => $bank->image ? env("APP_URL")."storage/".$bank->image : null,
                 "state" => $bank->state ?? 1,
                 "created_at" => $bank->created_at->format('Y-m-d h:i A'),
+                "comprobantes" => $bank->getComprobantes->map(function($comprobanteRel) {
+                    return [
+                        "id_relacion" => $comprobanteRel->id,
+                        "tipo_caracter" => $comprobanteRel->tipo_caracter,
+                        "ncaracteres" => $comprobanteRel->ncaracteres,
+                        "ubicacion_codigo" => $comprobanteRel->ubicacion_codigo,
+                        "img_ejemplo" => $comprobanteRel->img_ejemplo,
+                        "state_relacion" => $comprobanteRel->state,
+                        "created_at_relacion" => $comprobanteRel->created_at->format("Y-m-d h:i A"),
+                        "comprobante" => [
+                            "id" => $comprobanteRel->comprobante->id, // Aquí accedes a los datos del comprobante
+                            "name" => $comprobanteRel->comprobante->name,
+                        ]
+                    ];
+                })
             ]
         ]);
     }
@@ -118,6 +139,21 @@ class bankController extends Controller
                 "image" => $b->image ? env("APP_URL")."storage/".$b->image : null,
                 "state" => $b->state,
                 "created_at" => $b->created_at->format('Y-m-d h:i A'),
+                "comprobantes" => $b->getComprobantes->map(function($comprobanteRel) {
+                    return [
+                        "id_relacion" => $comprobanteRel->id,
+                        "tipo_caracter" => $comprobanteRel->tipo_caracter,
+                        "ncaracteres" => $comprobanteRel->ncaracteres,
+                        "ubicacion_codigo" => $comprobanteRel->ubicacion_codigo,
+                        "img_ejemplo" => $comprobanteRel->img_ejemplo,
+                        "state_relacion" => $comprobanteRel->state,
+                        "created_at_relacion" => $comprobanteRel->created_at->format("Y-m-d h:i A"),
+                        "comprobante" => [
+                            "id" => $comprobanteRel->comprobante->id, // Aquí accedes a los datos del comprobante
+                            "name" => $comprobanteRel->comprobante->name,
+                        ]
+                    ];
+                })
             ]
         ]);
     }
@@ -136,7 +172,9 @@ class bankController extends Controller
     }
 
     public function obtenerComprobantes(){
-        $comprobantes = ComprobantePago::where('state','1')->get();
+        $comprobantes = ComprobantePago::where('state','1')
+                        ->orderBy("id","desc")
+                        ->get();
         return response() -> json([
             "comprobantes" => $comprobantes->map(function($comprobante) {
                 return [
@@ -151,7 +189,7 @@ class bankController extends Controller
         $request->validate([
             'id_banco' => 'required|exists:bank,id', // Validar que el banco exista
             'id_comprobante_pago' => 'required|exists:comprobante_pago,id', // Validar que el comprobante exista
-            'tipo_caracter' => 'required|boolean',
+            'tipo_caracter' => 'required|in:1,2',
             'ncaracteres' => 'required|integer',
             'ubicacion_codigo' => 'nullable|string',
             'img_ejemplo_relation' => 'nullable|image|max:2048', // Validar que sea una imagen
@@ -175,11 +213,17 @@ class bankController extends Controller
 
         return response()->json([
             "relacionBancoComprobante" => [
-               "tipo_caracter" => $relacion->tipo_caracter,
+                "id_relacion" => $relacion->id,
+                "tipo_caracter" => $relacion->tipo_caracter,
                 "ncaracteres" => $relacion->ncaracteres,
                 "ubicacion_codigo" => $relacion->ubicacion_codigo,
                 "img_ejemplo" => $relacion->img_ejemplo,
-                "state_relacion" => $relacion->state, 
+                "state_relacion" => $relacion->state ?? 1, 
+                "created_at_relacion" => $relacion->created_at->format("Y-m-d h:i A"),
+                "comprobante" => [
+                    "id" => $relacion->comprobante->id, // Aquí accedes a los datos del comprobante
+                    "name" => $relacion->comprobante->name,
+                ]
             ]
         ]);
     }

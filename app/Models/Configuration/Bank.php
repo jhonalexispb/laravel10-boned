@@ -42,7 +42,8 @@ class Bank extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
 
-    public function getComprobantes(){
-        return $this->belongsToMany(ComprobantePago::class,'relacion_bank_comprobante','id_banco','id_comprobante_pago');
+    public function getComprobantes()
+    {
+        return $this->hasMany(RelacionBankComprobante::class, 'id_banco');
     }
 }
