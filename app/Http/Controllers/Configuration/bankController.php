@@ -28,7 +28,7 @@ class bankController extends Controller
                 return [
                     "id" => $b->id,
                     "name" => $b->name,
-                    "image" => $b->image ? env("APP_URL")."storage/".$b->image : null,
+                    "image" => $b->image ? env("APP_URL")."storage/".$b->image : env("IMAGE_DEFAULT"),
                     "state" => $b->state,
                     "created_at" => $b->created_at->format("Y-m-d h:i A"),
                     "comprobantes" => $b->getComprobantes->map(function($comprobanteRel) {

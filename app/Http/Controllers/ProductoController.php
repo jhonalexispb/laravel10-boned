@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ProductoResource;
 use App\Models\Configuration\CategoriaProducto;
 use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\LineaFarmaceutica;
 use App\Models\Configuration\PrincipioActivo;
+use App\Models\Producto;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Unidad;
 use Illuminate\Http\Request;
@@ -16,9 +18,18 @@ class ProductoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $search = $request->get('search');
+
+        $bank = Producto::where("nombre","like","%".$search."%")
+                                ->orderBy("id","desc")
+                                ->paginate(25);
+                                
+        return response()->json([
+            'total' => $bank->total(),
+            'products' => ProductoResource::collection($bank),
+        ]);
     }
 
     /**

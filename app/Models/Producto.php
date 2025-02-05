@@ -6,6 +6,7 @@ use App\Models\Configuration\CategoriaProducto;
 use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\LineaFarmaceutica;
+use App\Models\Configuration\PrincipioActivo;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\ProductoLotes;
 use App\Models\ProductoAtributtes\Unidad;
@@ -20,7 +21,7 @@ class Producto extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
-    protected $table = "condicion_almacenamiento0";
+    protected $table = "productos";
     protected $fillable = [
         "sku",
         "tproducto",
@@ -28,6 +29,8 @@ class Producto extends Model
         "unidad_id",
         "laboratorio_id",
         "nombre",
+        "caracteristicas",
+        "categoria_id",
         "descripcion",
         "registro_sanitario",
         "pventa",
@@ -60,37 +63,50 @@ class Producto extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
     
-    public function unidad()
+    public function get_unidad()
     {
         return $this->belongsTo(Unidad::class, 'unidad_id'); // Unidad es el modelo relacionado
     }
 
-    public function laboratorio()
+    public function get_laboratorio()
     {
         return $this->belongsTo(Laboratorio::class, 'laboratorio_id'); // Laboratorio es el modelo relacionado
     }
 
-    public function lineaFarmaceutica()
+    public function get_lineaFarmaceutica()
     {
         return $this->belongsTo(LineaFarmaceutica::class, 'linea_farmaceutica_id'); // LíneaFarmaceutica es el modelo relacionado
     }
 
-    public function fabricante()
+    public function get_fabricante()
     {
         return $this->belongsTo(FabricanteProducto::class, 'fabricante_id'); // Fabricante es el modelo relacionado
     }
 
-    public function categoria()
-    {
-        return $this->belongsToMany(CategoriaProducto::class,'producto_categoria_relation','producto_id','categoria_id');
-    }
-
-    public function condicion_almacenamiento()
+    public function get_condicion_almacenamiento()
     {
         return $this->belongsToMany(CondicionAlmacenamiento::class,'producto_cond_almac_relation','producto_id','cond_almac_id');
     }
 
-    public function lotes()
+    public function get_principios_activos()
+    {
+        return $this->belongsToMany(PrincipioActivo::class,'producto_principio_relation','producto_id','principio_id');
+    }
+
+
+
+
+
+
+
+
+
+    public function get_categoria()
+    {
+        return $this->belongsToMany(CategoriaProducto::class,'producto_categoria_relation','producto_id','categoria_id');
+    }
+
+    public function get_lotes()
     {
         return $this->hasMany(ProductoLotes::class,'producto_id');
     }
