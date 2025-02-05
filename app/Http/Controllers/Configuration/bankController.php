@@ -37,7 +37,7 @@ class bankController extends Controller
                             "tipo_caracter" => $comprobanteRel->tipo_caracter,
                             "ncaracteres" => $comprobanteRel->ncaracteres,
                             "ubicacion_codigo" => $comprobanteRel->ubicacion_codigo,
-                            "img_ejemplo" => $comprobanteRel->img_ejemplo,
+                            "img_ejemplo" => $comprobanteRel->img_ejemplo ? env("APP_URL")."storage/".$comprobanteRel->img_ejemplo : null,
                             "state_relacion" => $comprobanteRel->state,
                             "created_at_relacion" => $comprobanteRel->created_at->format("Y-m-d h:i A"),
                             "comprobante" => [
@@ -84,7 +84,7 @@ class bankController extends Controller
                         "tipo_caracter" => $comprobanteRel->tipo_caracter,
                         "ncaracteres" => $comprobanteRel->ncaracteres,
                         "ubicacion_codigo" => $comprobanteRel->ubicacion_codigo,
-                        "img_ejemplo" => $comprobanteRel->img_ejemplo,
+                        "img_ejemplo" => $comprobanteRel->img_ejemplo ? env("APP_URL")."storage/".$comprobanteRel->img_ejemplo : null,
                         "state_relacion" => $comprobanteRel->state,
                         "created_at_relacion" => $comprobanteRel->created_at->format("Y-m-d h:i A"),
                         "comprobante" => [
@@ -145,7 +145,7 @@ class bankController extends Controller
                         "tipo_caracter" => $comprobanteRel->tipo_caracter,
                         "ncaracteres" => $comprobanteRel->ncaracteres,
                         "ubicacion_codigo" => $comprobanteRel->ubicacion_codigo,
-                        "img_ejemplo" => $comprobanteRel->img_ejemplo,
+                        "img_ejemplo" => $comprobanteRel->img_ejemplo ? env("APP_URL")."storage/".$comprobanteRel->img_ejemplo : null,
                         "state_relacion" => $comprobanteRel->state,
                         "created_at_relacion" => $comprobanteRel->created_at->format("Y-m-d h:i A"),
                         "comprobante" => [
@@ -217,7 +217,63 @@ class bankController extends Controller
                 "tipo_caracter" => $relacion->tipo_caracter,
                 "ncaracteres" => $relacion->ncaracteres,
                 "ubicacion_codigo" => $relacion->ubicacion_codigo,
-                "img_ejemplo" => $relacion->img_ejemplo,
+                "img_ejemplo" => $relacion->img_ejemplo ? env("APP_URL")."storage/".$relacion->img_ejemplo : null,
+                "state_relacion" => $relacion->state ?? 1, 
+                "created_at_relacion" => $relacion->created_at->format("Y-m-d h:i A"),
+                "comprobante" => [
+                    "id" => $relacion->comprobante->id, // Aquí accedes a los datos del comprobante
+                    "name" => $relacion->comprobante->name,
+                ]
+            ]
+        ]);
+    }
+
+    public function updateBancoComprobante(Request $request, string $id){
+        $request->validate([
+            'id_banco' => 'required|exists:bank,id', // Validar que el banco exista
+            'id_comprobante_pago' => 'required|exists:comprobante_pago,id', // Validar que el comprobante exista
+            'tipo_caracter' => 'required|in:1,2',
+            'ncaracteres' => 'required|integer',
+            'ubicacion_codigo' => 'nullable|string',
+            'img_ejemplo_relation' => 'nullable|image|max:2048',
+            'keep_existing_image' => 'required|in:true,false',
+        ]);
+
+        $existingRelation = RelacionBankComprobante::where('id_banco', $request->id_banco)
+        ->where('id_comprobante_pago', $request->id_comprobante_pago)
+        ->where('id','<>', $id)
+        ->first();
+
+        if ($existingRelation) {
+            return response()->json(['error' => 'La relación ya existe.'], 422);
+        }
+
+        $relacion = RelacionBankComprobante::findOrFail($id);
+
+        if ($request->hasFile('img_ejemplo_relation')) {
+            // Si hay un archivo nuevo, eliminamos el anterior y guardamos el nuevo
+            if ($relacion->img_ejemplo) {
+                Storage::delete($relacion->img_ejemplo);
+            }
+            $path = Storage::putFile("relation_bank_comprobante_example", $request->file("img_ejemplo_relation"));
+            $relacion->img_ejemplo = $path;
+        } elseif ($request->input('keep_existing_image') === 'false') {
+            // Si el usuario quiere eliminar la imagen, borramos la actual
+            if ($relacion->img_ejemplo) {
+                Storage::delete($relacion->img_ejemplo);
+            }
+            $relacion->img_ejemplo = null;
+        }
+
+        $relacion->update($request->all());
+    
+        return response()->json([
+            "relacionBancoComprobante" => [
+                "id_relacion" => $relacion->id,
+                "tipo_caracter" => $relacion->tipo_caracter,
+                "ncaracteres" => $relacion->ncaracteres,
+                "ubicacion_codigo" => $relacion->ubicacion_codigo,
+                "img_ejemplo" => $relacion->img_ejemplo ? env("APP_URL")."storage/".$relacion->img_ejemplo : null,
                 "state_relacion" => $relacion->state ?? 1, 
                 "created_at_relacion" => $relacion->created_at->format("Y-m-d h:i A"),
                 "comprobante" => [

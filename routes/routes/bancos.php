@@ -12,6 +12,7 @@ Route::group([
     //banco
     Route::post('/banco/{id}', [bankController::class, 'update']);
     Route::post('/banco/gestionar_relacion/banco_comprobante', [bankController::class, 'registrarBancoComprobante']);
+    Route::post('/banco/gestionar_relacion/banco_comprobante/{id}', [bankController::class, 'updateBancoComprobante']);
     Route::get('/banco/recursos', [bankController::class, 'obtenerComprobantes']);
     Route::resource("banco",bankController::class)->except(['update','create','edit']);
 });
