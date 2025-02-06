@@ -16,6 +16,7 @@ class Laboratorio extends Model
     protected $table = 'laboratorio';
 
     protected $fillable = [
+        "codigo",
         "name",
         "image",
         "color",
@@ -45,5 +46,22 @@ class Laboratorio extends Model
     public function proveedores()
     {
         return $this->belongsToMany(Proveedor::class, 'laboratorio_proveedor', 'laboratorio_id', 'proveedor_id');
+    }
+
+    public static function generarCodigo()
+    {
+        // Obtener el último código del laboratorio
+        $ultimoCodigo = self::orderByDesc('codigo')->first();
+
+        if ($ultimoCodigo) {
+            $numeroUltimoCodigo = (int) $ultimoCodigo->codigo;
+            // Incrementar el número
+            $nuevoCodigo = $numeroUltimoCodigo + 1;
+        } else {
+            // Si no hay registros, comenzamos con el código 'codigo_1'
+            $nuevoCodigo = 101;
+        }
+
+        return $nuevoCodigo;
     }
 }

@@ -28,7 +28,7 @@ class LaboratorioController extends Controller
                     "id" => $d->id,
                     "name" => $d->name,
                     "state" => $d->state,
-                    "image" => $d->image ? env("APP_URL")."storage/".$d->image : '',
+                    "image" => $d->image ? env("APP_URL")."storage/".$d->image : env("IMAGE_DEFAULT"),
                     "margen_minimo" => $d->margen_minimo,
                     "color" => $d->color,
                     "created_at" => $d->created_at->format("Y-m-d h:i A"),
@@ -84,6 +84,10 @@ class LaboratorioController extends Controller
             $request->request->add(["image" => $path]);
         }
 
+        $codigo = Laboratorio::generarCodigo();
+
+        $request->merge(['codigo' => $codigo]);
+
         $laboratorio = Laboratorio::create(  $request->all());
 
         $laboratorio->proveedores()->attach($proveedores);
@@ -96,7 +100,7 @@ class LaboratorioController extends Controller
                 "id" => $laboratorio->id,
                 "name" => $laboratorio->name,
                 "state" => $laboratorio->state ?? 1,
-                "image" => $laboratorio->image ? env("APP_URL")."storage/".$laboratorio->image : '',
+                "image" => $laboratorio->image ? env("APP_URL")."storage/".$laboratorio->image : env("IMAGE_DEFAULT"),
                 "margen_minimo" => $laboratorio->margen_minimo,
                 "color" => $laboratorio->color,
                 "created_at" => $laboratorio->created_at->format("Y-m-d h:i A"),
@@ -173,7 +177,7 @@ class LaboratorioController extends Controller
                 "id" => $laboratorio->id,
                 "name" => $laboratorio->name,
                 "state" => $laboratorio->state ?? 1,
-                "image" => $laboratorio->image ? env("APP_URL")."storage/".$laboratorio->image : '',
+                "image" => $laboratorio->image ? env("APP_URL")."storage/".$laboratorio->image : env("IMAGE_DEFAULT"),
                 "margen_minimo" => $laboratorio->margen_minimo,
                 "color" => $laboratorio->color,
                 "created_at" => $laboratorio->created_at->format("Y-m-d h:i A"),
@@ -221,7 +225,7 @@ class LaboratorioController extends Controller
                     "id" => $laboratorio->id,
                     "name" => $laboratorio->name,
                     "state" => $laboratorio->state ?? 1,
-                    "image" => $laboratorio->image ? env("APP_URL")."storage/".$laboratorio->image : '',
+                    "image" => $laboratorio->image ? env("APP_URL")."storage/".$laboratorio->image : env("IMAGE_DEFAULT"),
                     "margen_minimo" => $laboratorio->margen_minimo,
                     "color" => $laboratorio->color,
                     "created_at" => $laboratorio->created_at->format("Y-m-d h:i A"),
@@ -254,7 +258,16 @@ class LaboratorioController extends Controller
                     "id" => $p->id,
                     "name" => $p->name,
                 ];
-            })
+            }),
         ]);
     }   
+
+    public function getRecursosParaCrear()
+    {   
+        $codigo = Laboratorio::generarCodigo();
+        return response()->json([
+            
+            "codigo" => $codigo,
+        ]);
+    }  
 }

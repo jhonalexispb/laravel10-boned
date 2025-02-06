@@ -41,6 +41,9 @@ class ProductoResource extends JsonResource
             "condicion_almacenamiento" => $this->get_condicion_almacenamiento->pluck('id')->toArray(),
             "principios_activos" => $this->get_principios_activos->pluck('id')->toArray(),
             "sale_boleta" => $this->sale_boleta,
+            "maneja_lotes" => $this->maneja_lotes,
+            "maneja_escalas" => $this->maneja_escalas,
+            "promocionable" => $this->promocionable,
             "state" => $this->state,
             "created_at" => $this->created_at->format("Y-m-d h:i A"),
         ];

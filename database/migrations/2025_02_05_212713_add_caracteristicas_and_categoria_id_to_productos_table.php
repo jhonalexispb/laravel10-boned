@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::table('productos', function (Blueprint $table) {
             // Agregar columna 'caracteristicas' después de la columna 'nombre'
             $table->text('caracteristicas')->nullable()->after('nombre');
+            $table->string('codigo_digemid')->nullable()->after('registro_sanitario');
+            $table->boolean('maneja_lotes')->default(1)->after('sale_boleta')->comment('1 maneja lotes 0 no maneja lotes');
+            $table->boolean('maneja_escalas')->default(0)->after('maneja_lotes')->comment('1 maneja escalas 0 no maneja escalas');
+            $table->boolean('promocionable')->default(0)->after('maneja_escalas')->comment('1 es promocionable 0 no es promocionable');
 
             // Agregar columna 'categoria_id' después de 'caracteristicas' y establecer la clave foránea
             $table->unsignedBigInteger('categoria_id')->nullable()->after('caracteristicas');
@@ -28,7 +32,7 @@ return new class extends Migration
     {
         Schema::table('productos', function (Blueprint $table) {
             $table->dropForeign(['categoria_id']);
-            $table->dropColumn(['caracteristicas', 'categoria_id']);
+            $table->dropColumn(['caracteristicas', 'codigo_digemid', 'maneja_lotes', 'maneja_escalas', 'promocionable', 'categoria_id']);
         });
     }
 };

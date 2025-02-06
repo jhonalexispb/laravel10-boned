@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('productos', function (Blueprint $table) {
             $table->id();
-            $table->string('sku');
+            $table->string('sku','8');
             $table->enum('tproducto',['1','2'])->comment('1 es comercial y 2 generico');
             $table->string('codigobarra');
             $table->unsignedBigInteger('unidad_id');
@@ -32,8 +32,8 @@ return new class extends Migration
             $table->foreign('linea_farmaceutica_id')->references('id')->on('lineas_farmaceuticas')->onDelete('restrict');
             $table->unsignedBigInteger('fabricante_id');
             $table->foreign('fabricante_id')->references('id')->on('fabricantes_producto')->onDelete('restrict');
-            $table->boolean('sale_boleta')->default(2)->comment('1 sale en boleta y 2 no sale en boleta');
-            $table->boolean('state')->default(1)->comment('0 es inactivo y 1 es activo');
+            $table->boolean('sale_boleta')->default(0)->comment('1 sale en boleta y 0 no sale en boleta');
+            $table->boolean('state')->default(1)->comment('1 es activo y 0 es inactivo');
             $table->timestamps();
             $table->softDeletes();
         });

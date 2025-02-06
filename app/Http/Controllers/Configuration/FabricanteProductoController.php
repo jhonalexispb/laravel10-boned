@@ -26,7 +26,8 @@ class FabricanteProductoController extends Controller
                     "pais" => $d->pais ?? 'Sin pais',
                     "imagen" => $d->imagen,
                     "imagen_public" => $d->imagen_public,
-                    "created_at" => $d->created_at->format("Y-m-d h:i A")
+                    "created_at" => $d->created_at->format("Y-m-d h:i A"),
+                    "name_complete" => $d->pais ? $d->nombre.' ('.$d->pais.')' : $d->nombre,
                 ];
             })
         ]);
@@ -92,7 +93,8 @@ class FabricanteProductoController extends Controller
                 "pais" => $fabricante->pais ?? 'Sin pais',
                 "imagen" => $fabricante->imagen,
                 "imagen_public" => $fabricante->imagen_public,
-                "created_at" => $fabricante->created_at->format("Y-m-d h:i A")
+                "created_at" => $fabricante->created_at->format("Y-m-d h:i A"),
+                "name_complete" => $fabricante->pais ? $fabricante->nombre.' ('.$fabricante->pais.')' : $fabricante->nombre,
             ],
         ]);
     }
@@ -167,7 +169,8 @@ class FabricanteProductoController extends Controller
                 "pais" => $fabricante->pais ?? 'Sin pais',
                 "imagen" => $fabricante->imagen,
                 "imagen_public" => $fabricante->imagen_public,
-                "created_at" => $fabricante->created_at->format("Y-m-d h:i A")
+                "created_at" => $fabricante->created_at->format("Y-m-d h:i A"),
+                "name_complete" => $fabricante->pais ? $fabricante->nombre.' ('.$fabricante->pais.')' : $fabricante->nombre,
             ],
         ]);
     }
@@ -203,7 +206,8 @@ class FabricanteProductoController extends Controller
                     "pais" => $fabricante->pais ?? 'Sin pais',
                     "imagen" => $fabricante->imagen,
                     "imagen_public" => $fabricante->imagen_public,
-                    "created_at" => $fabricante->created_at->format("Y-m-d h:i A")
+                    "created_at" => $fabricante->created_at->format("Y-m-d h:i A"),
+                    "name_complete" => $fabricante->pais ? $fabricante->nombre.' ('.$fabricante->pais.')' : $fabricante->nombre,
                 ],
             ]);
         }

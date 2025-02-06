@@ -93,6 +93,37 @@ class Producto extends Model
         return $this->belongsToMany(PrincipioActivo::class,'producto_principio_relation','producto_id','principio_id');
     }
 
+    public static function generarCodigo($laboratorioId)
+    {
+        $laboratorio = Laboratorio::find($laboratorioId);
+
+        if ($laboratorio) {
+            $codigoLaboratorio = $laboratorio->codigo; // Obtener el código del laboratorio
+
+            $ultimoProducto = self::where('laboratorio_id', $laboratorioId)
+                                  ->orderByDesc('sku')
+                                  ->first();
+
+            if ($ultimoProducto) {
+                // Extraer el número del código del último producto (últimos 5 dígitos)
+                $numeroUltimoProducto = (int) substr($ultimoProducto->codigo, -5);
+                if($numeroUltimoProducto === 99999){
+                    return null;
+                }
+                // Generamos el nuevo código
+                $nuevoCodigo = $codigoLaboratorio . str_pad($numeroUltimoProducto + 1, 5, '0', STR_PAD_LEFT);
+            } else {
+                // Si no hay productos, comenzamos con el primer producto de ese laboratorio
+                $nuevoCodigo = $codigoLaboratorio . '00001';
+            }
+
+            return $nuevoCodigo;
+        }
+
+        // Si no se encuentra el laboratorio, devolver null o algún valor por defecto
+        return null;
+    }
+
 
 
 

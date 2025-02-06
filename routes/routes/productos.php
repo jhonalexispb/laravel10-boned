@@ -10,6 +10,7 @@ Route::group([
 
 ], function () {
     Route::get('/productos/recursos', [ProductoController::class, 'getRecursos']);
+    Route::get('/productos/recursos_para_crear', [ProductoController::class, 'getRecursosParaCrear']);
     Route::put('/productos/restaurar/{id}', [ProductoController::class, 'restaurar']);
     Route::resource("productos",ProductoController::class)->except(['create','edit']);
 });
