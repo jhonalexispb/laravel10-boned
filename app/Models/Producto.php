@@ -41,6 +41,9 @@ class Producto extends Model
         "linea_farmaceutica_id",
         "fabricante_id",
         "sale_boleta",
+        "maneja_escalas",
+        "maneja_lotes",
+        "promocionable",
         "state",
     ];
 
@@ -96,7 +99,6 @@ class Producto extends Model
     public static function generarCodigo($laboratorioId)
     {
         $laboratorio = Laboratorio::find($laboratorioId);
-
         if ($laboratorio) {
             $codigoLaboratorio = $laboratorio->codigo; // Obtener el código del laboratorio
 
@@ -105,12 +107,14 @@ class Producto extends Model
                                   ->first();
 
             if ($ultimoProducto) {
-                // Extraer el número del código del último producto (últimos 5 dígitos)
-                $numeroUltimoProducto = (int) substr($ultimoProducto->codigo, -5);
-                if($numeroUltimoProducto === 99999){
-                    return null;
+                // Asegúrate de que el código tenga al menos la longitud esperada
+                $numeroUltimoProducto = substr($ultimoProducto->sku, -5);
+
+                if ($numeroUltimoProducto === 99999) {
+                    return null; 
                 }
-                // Generamos el nuevo código
+
+                // Generar el nuevo código sumando 1 al número final del código
                 $nuevoCodigo = $codigoLaboratorio . str_pad($numeroUltimoProducto + 1, 5, '0', STR_PAD_LEFT);
             } else {
                 // Si no hay productos, comenzamos con el primer producto de ese laboratorio

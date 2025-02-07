@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\ProductoResource;
+use App\Http\Resources\Product\ProductCollection;
+use App\Http\Resources\Product\ProductResource;
 use App\Models\Configuration\CategoriaProducto;
 use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
@@ -12,6 +13,7 @@ use App\Models\Producto;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Unidad;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductoController extends Controller
 {
@@ -19,16 +21,18 @@ class ProductoController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-    {
+    {   
         $search = $request->get('search');
 
-        $bank = Producto::where("nombre","like","%".$search."%")
-                                ->orderBy("id","desc")
-                                ->paginate(25);
+        $product = Producto::when($search, function($query, $search) {
+            return $query->where('id', '=', $search);
+        }, )
+        ->orderBy('id', 'desc')
+        ->paginate(25);
                                 
         return response()->json([
-            'total' => $bank->total(),
-            'products' => ProductoResource::collection($bank),
+            'total' => $product->total(),
+            'products' => ProductCollection::make($product),
         ]);
     }
 
@@ -37,8 +41,8 @@ class ProductoController extends Controller
      */
     public function store(Request $request)
     {   
-        /* $request->validate([
-            'sku_manual' => 'digits:8',
+        $request->validate([
+            'sku_manual' => 'nullable|digits:8',
             'tproducto' => 'required|in:1,2',
             'unidad_id' => 'required|numeric|exists:unidades,id',
             'laboratorio_id' => 'required|numeric|exists:laboratorio,id',
@@ -46,92 +50,109 @@ class ProductoController extends Controller
             'categoria_id' => 'nullable|exists:categoria,id',
             'stock_seguridad' => 'required|numeric',
             'linea_farmaceutica_id' => 'required|exists:lineas_farmaceuticas,id',
-            'fabricante_id ' => 'required|exists:fabricantes_producto,id',
+            'fabricante_id' => 'required|exists:fabricantes_producto,id',
             'sale_boleta' => 'required|boolean',
             'maneja_lotes' => 'required|boolean',
             'maneja_escalas' => 'required|boolean',
-            'promocionable' => 'required|boolean'
-        ]); */
+            'promocionable' => 'required|boolean',
+            'principio_activo_id' => 'nullable|array',
+            'principio_activo_id.*' => 'exists:principio_activo,id',
+        ]);
 
-        if(!empty($request->sku_manual)){
-            $request->merge(['sku' => $request->sku_manual]);
-        }else{
-            $codigo = Producto::generarCodigo($request->laboratorio_id);
-            if (is_null($codigo)) {
+        DB::beginTransaction();  // Inicia la transacción
+
+        try {
+
+            // Generación del SKU si no se pasa manualmente
+            if (!empty($request->sku_manual)) {
+                $request->merge(['sku' => $request->sku_manual]);
+            } else {
+                $codigo = Producto::generarCodigo($request->laboratorio_id);
+                if (is_null($codigo)) {
+                    return response()->json([
+                        'message' => 'Error al generar el código de producto.',
+                        'message_text' => 'No se pudo generar un código debido a un problema con el laboratorio.',
+                    ], 422);
+                }
+                $request->merge(['sku' => $codigo]);
+            }
+
+            // Verificar si el SKU ya existe
+            $exist_sku = Producto::withTrashed()->where('sku', $request->sku)->first();
+
+            if ($exist_sku) {
+                if ($exist_sku->deleted_at) {
+                    return response()->json([
+                        "message" => 409,
+                        "message_text" => "El SKU {$exist_sku->sku} ya existe pero se encuentra eliminado. ¿Deseas restaurarlo?",
+                        "producto" => $exist_sku->id
+                    ]);
+                }
                 return response()->json([
-                    'message' => 'Error al generar el código de producto.',
-                    'message_text' => 'No se pudo generar un código debido a un problema con el laboratorio.',
+                    "message" => 403,
+                    "message_text" => "El SKU {$exist_sku->sku} ya existe en el producto {$exist_sku->nombre}."
                 ], 422);
             }
-            $request->merge(['sku' => $codigo]);
-        }
 
-        $exist_sku = Producto::withTrashed()
-                    ->where('sku',$request->sku)
+            // Validación de nombre y características (sin blancos)
+            $normalized_nombre = preg_replace('/\s+/', '', $request->nombre);
+            $normalized_caracteristicas = preg_replace('/\s+/', '', $request->caracteristicas);
+
+            if (empty($normalized_caracteristicas)) {
+                $is_exist_with_caracteristicas_null = Producto::withTrashed()
+                    ->whereRaw('REPLACE(nombre, " ", "") = ?', [$normalized_nombre])
+                    ->whereNull('concentracion')
                     ->first();
-        
-        if($exist_sku){
-            if ($exist_sku->deleted_at) {
-                // Si el departamento está eliminado lógicamente, puedes restaurarlo o actualizarlo
-                return response() -> json([
-                    "message" => 409,
-                    "message_text" => "el sku ".$exist_sku->sku." ya existe pero se encuentra eliminado, esta asignado al producto ".$exist_sku->nombre.' '.$exist_sku->caracteristicas." del laboratorio de ".$exist_sku->get_laboratorio->name." ¿Deseas restaurarlo?",
-                    "producto" => $exist_sku->id
-                ]);
+
+                if ($is_exist_with_caracteristicas_null) {
+                    return response()->json([
+                        "message" => 409,
+                        "message_text" => "El producto {$is_exist_with_caracteristicas_null->nombre} ya existe pero se encuentra eliminado."
+                    ]);
+                }
+            } else {
+                $is_exist_producto = Producto::withTrashed()
+                    ->whereRaw('REPLACE(nombre, " ", "") = ?', [$normalized_nombre])
+                    ->whereRaw('REPLACE(caracteristicas, " ", "") = ?', [$normalized_caracteristicas])
+                    ->first();
+
+                if ($is_exist_producto) {
+                    return response()->json([
+                        "message" => 403,
+                        "message_text" => "El producto {$is_exist_producto->nombre} ya existe."
+                    ], 422);
+                }
             }
+
+            // Crear el producto
+            $producto = Producto::create($request->all());
+
+            // Asociar los principios activos usando sync()
+            if (!empty($request->principio_activo_id)) {
+                $producto->get_principios_activos()->sync($request->principio_activo_id);
+            }
+
+            // Si todo va bien, confirmamos la transacción
+            DB::commit();
+
+            // Devolver el recurso del producto creado
+            return new ProductResource($producto);
+
+        } catch (\Exception $e) {
+            // Si algo sale mal, hacemos rollback
+            DB::rollBack();
+            
+            // Devolver el error
             return response()->json([
-                "message" => 403,
-                "message_text" => "el sku ".$exist_sku->sku." ya existe, esta asignado al producto ".$exist_sku->nombre.' '.$exist_sku->caracteristicas." del laboratorio de ".$exist_sku->get_laboratorio->name
-            ], 422);
+                'message' => 'Error en la creación del producto',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $normalized_nombre = preg_replace('/\s+/', '', $request->nombre);
-        $normalized_caracteristicas = preg_replace('/\s+/', '', $request->caracteristicas);
-
-        if (empty($normalized_caracteristicas)) {
-            $is_exist_with_caracteristicas_null = Producto::withTrashed()
-            ->whereRaw('REPLACE(name, " ", "") = ?', [$normalized_nombre])
-            ->whereNull('concentracion')
-            ->first();
-
-            if($is_exist_with_caracteristicas_null){
-                if ($is_exist_with_caracteristicas_null->deleted_at) {
-                    
-                    return response() -> json([
-                        "message" => 409,
-                        "message_text" => "el producto ".$is_exist_with_caracteristicas_null->nombre." ya existe pero se encuentra eliminado, ¿Deseas restaurarlo?",
-                        "producto" => $is_exist_with_caracteristicas_null->id
-                    ]);
-                }
-                return response()->json([
-                    "message" => 403,
-                    "message_text" => "el producto ".$is_exist_with_caracteristicas_null->nombre." ya existe"
-                ], 422);
-            }
-        } else {
-            $is_exist_producto = Producto::withTrashed()
-            ->whereRaw('REPLACE(name, " ", "") = ?', [$normalized_nombre])
-            ->whereRaw('REPLACE(caracteristicas, " ", "") = ?', [$normalized_caracteristicas])
-            ->first();
-
-            if($is_exist_producto){
-                if ($is_exist_producto->deleted_at) {
-                    return response() -> json([
-                        "message" => 409,
-                        "message_text" => "el producto ".$is_exist_producto->nombre.' '.$is_exist_producto->caracteristicas." ya existe pero se encuentra eliminado, ¿Deseas restaurarlo?",
-                        "producto" => $is_exist_producto->id
-                    ]);
-                }
-                return response() -> json([
-                    "message" => 403,
-                    "message_text" => "el producto ".$is_exist_producto->nombre.' '.$is_exist_producto->caracteristicas." ya existe"
-                ],422);
-            }
-        }
-
-        $producto = Producto::create($request->all());
-        ProductoResource::collection($producto);
     }
+
+    /* $producto->get_principios_activos()->attach($proveedores);
+
+        $producto->load('proveedores'); */
 
     /**
      * Display the specified resource.
@@ -146,7 +167,116 @@ class ProductoController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $request->validate([
+            'sku_manual' => 'required|digits:8',
+            'tproducto' => 'required|in:1,2',
+            'unidad_id' => 'required|numeric|exists:unidades,id',
+            'laboratorio_id' => 'required|numeric|exists:laboratorio,id',
+            'nombre' => 'required',
+            'categoria_id' => 'nullable|exists:categoria,id',
+            'stock_seguridad' => 'required|numeric',
+            'linea_farmaceutica_id' => 'required|exists:lineas_farmaceuticas,id',
+            'fabricante_id' => 'required|exists:fabricantes_producto,id',
+            'sale_boleta' => 'required|boolean',
+            'maneja_lotes' => 'required|boolean',
+            'maneja_escalas' => 'required|boolean',
+            'promocionable' => 'required|boolean',
+            'principio_activo_id' => 'nullable|array',
+            'principio_activo_id.*' => 'exists:principio_activo,id',
+        ]);
+
+        DB::beginTransaction();  // Inicia la transacción
+
+        try {
+            // Generación del SKU si no se pasa manualmente
+            if (!empty($request->sku_manual)) {
+                $request->merge(['sku' => $request->sku_manual]);
+            } else {
+                $codigo = Producto::generarCodigo($request->laboratorio_id);
+                if (is_null($codigo)) {
+                    return response()->json([
+                        'message' => 'Error al generar el código de producto.',
+                        'message_text' => 'No se pudo generar un código debido a un problema con el laboratorio.',
+                    ], 422);
+                }
+                $request->merge(['sku' => $codigo]);
+            }
+
+            // Verificar si el SKU ya existe
+            $exist_sku = Producto::withTrashed()
+                        ->where('sku', $request->sku)
+                        ->where('id', '<>',$id)
+                        ->first();
+
+            if ($exist_sku) {
+                if ($exist_sku->deleted_at) {
+                    return response()->json([
+                        "message" => 409,
+                        "message_text" => "El SKU {$exist_sku->sku} ya existe pero se encuentra eliminado. ¿Deseas restaurarlo?",
+                        "producto" => $exist_sku->id
+                    ]);
+                }
+                return response()->json([
+                    "message" => 403,
+                    "message_text" => "El SKU {$exist_sku->sku} ya existe en el producto {$exist_sku->nombre}."
+                ], 422);
+            }
+
+            // Validación de nombre y características (sin blancos)
+            $normalized_nombre = preg_replace('/\s+/', '', $request->nombre);
+            $normalized_caracteristicas = preg_replace('/\s+/', '', $request->caracteristicas);
+
+            if (empty($normalized_caracteristicas)) {
+                $is_exist_with_caracteristicas_null = Producto::withTrashed()
+                    ->whereRaw('REPLACE(nombre, " ", "") = ?', [$normalized_nombre])
+                    ->whereNull('concentracion')
+                    ->first();
+
+                if ($is_exist_with_caracteristicas_null) {
+                    return response()->json([
+                        "message" => 409,
+                        "message_text" => "El producto {$is_exist_with_caracteristicas_null->nombre} ya existe pero se encuentra eliminado."
+                    ]);
+                }
+            } else {
+                $is_exist_producto = Producto::withTrashed()
+                    ->whereRaw('REPLACE(nombre, " ", "") = ?', [$normalized_nombre])
+                    ->whereRaw('REPLACE(caracteristicas, " ", "") = ?', [$normalized_caracteristicas])
+                    ->first();
+
+                if ($is_exist_producto) {
+                    return response()->json([
+                        "message" => 403,
+                        "message_text" => "El producto {$is_exist_producto->nombre} ya existe."
+                    ], 422);
+                }
+            }
+
+            // Crear el producto
+            $producto = Producto::findOrFail($id);
+            $producto->update($request->all());
+
+            // Asociar los principios activos usando sync()
+            if (!empty($request->principio_activo_id)) {
+                $producto->get_principios_activos()->sync($request->principio_activo_id);
+            }
+
+            // Si todo va bien, confirmamos la transacción
+            DB::commit();
+
+            // Devolver el recurso del producto creado
+            return new ProductResource($producto);
+
+        } catch (\Exception $e) {
+            // Si algo sale mal, hacemos rollback
+            DB::rollBack();
+            
+            // Devolver el error
+            return response()->json([
+                'message' => 'Error en la creación del producto',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -185,7 +315,7 @@ class ProductoController extends Controller
             "lineas_farmaceuticas" => LineaFarmaceutica::where('status', 1)->get()->map(function ($p) {
                 return [
                     "id" => $p->id,
-                    "name" => $p->nombre,
+                    "nombre" => $p->nombre,
                 ];
             }),
         

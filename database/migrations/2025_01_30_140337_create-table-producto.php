@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('sku','8');
             $table->enum('tproducto',['1','2'])->comment('1 es comercial y 2 generico');
-            $table->string('codigobarra');
+            $table->string('codigobarra')->nullable();
             $table->unsignedBigInteger('unidad_id');
             $table->foreign('unidad_id')->references('id')->on('unidades')->onDelete('restrict');
             $table->unsignedBigInteger('laboratorio_id');
