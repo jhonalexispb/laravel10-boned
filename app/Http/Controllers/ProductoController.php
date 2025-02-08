@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\Product\DownloadProduct;
 use App\Http\Resources\Product\ProductCollection;
 use App\Http\Resources\Product\ProductResource;
 use App\Models\Configuration\CategoriaProducto;
@@ -14,6 +15,7 @@ use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Unidad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ProductoController extends Controller
 {
@@ -218,7 +220,7 @@ class ProductoController extends Controller
                 }
                 return response()->json([
                     "message" => 403,
-                    "message_text" => "El SKU {$exist_sku->sku} ya existe en el producto {$exist_sku->nombre}."
+                    "message_text" => "El SKU {$exist_sku->sku} ya existe para el producto {$exist_sku->get_laboratorio->name} {$exist_sku->nombre} {$exist_sku->caracteristicas}."
                 ], 422);
             }
 
@@ -230,24 +232,26 @@ class ProductoController extends Controller
                 $is_exist_with_caracteristicas_null = Producto::withTrashed()
                     ->whereRaw('REPLACE(nombre, " ", "") = ?', [$normalized_nombre])
                     ->whereNull('concentracion')
+                    ->where('id','<>',$id)
                     ->first();
 
                 if ($is_exist_with_caracteristicas_null) {
                     return response()->json([
                         "message" => 409,
-                        "message_text" => "El producto {$is_exist_with_caracteristicas_null->nombre} ya existe pero se encuentra eliminado."
+                        "message_text" => "El producto:  {$is_exist_with_caracteristicas_null->get_laboratorio->name} {$is_exist_with_caracteristicas_null->nombre} {$is_exist_with_caracteristicas_null->caracteristicas} ya existe pero se encuentra eliminado."
                     ]);
                 }
             } else {
                 $is_exist_producto = Producto::withTrashed()
                     ->whereRaw('REPLACE(nombre, " ", "") = ?', [$normalized_nombre])
                     ->whereRaw('REPLACE(caracteristicas, " ", "") = ?', [$normalized_caracteristicas])
+                    ->where('id','<>',$id)
                     ->first();
 
                 if ($is_exist_producto) {
                     return response()->json([
                         "message" => 403,
-                        "message_text" => "El producto {$is_exist_producto->nombre} ya existe."
+                        "message_text" => "El producto: {$is_exist_producto->get_laboratorio->name} {$is_exist_producto->nombre} {$is_exist_producto->caracteristicas} ya existe."
                     ], 422);
                 }
             }
@@ -355,5 +359,10 @@ class ProductoController extends Controller
         return response()->json([
             "codigo" => $codigo,
         ]);
+    }
+
+    public function export_products(){
+        $products = Producto::orderBy("id","desc")->get();
+        return Excel::download(new DownloadProduct($products),"productos_descargados.xlsx");
     }
 }

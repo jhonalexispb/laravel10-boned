@@ -5,6 +5,7 @@ use App\Http\Controllers\configuration\lugarEntregaController;
 use App\Http\Controllers\configuration\methodPaymentController;
 use App\Http\Controllers\Configuration\SucursaleController;
 use App\Http\Controllers\Configuration\WarehouseController;
+use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\UserAccessController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -70,3 +71,5 @@ Route::group([
     Route::resource("lugar_entrega",lugarEntregaController::class)->except(['create','edit']);
     Route::resource("metodo_pago",methodPaymentController::class)->only(['index', 'show', 'update']);
 });
+
+Route::get("excel/export-products",[ProductoController::class,"export_products"]);
