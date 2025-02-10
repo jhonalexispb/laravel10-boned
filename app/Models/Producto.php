@@ -65,6 +65,21 @@ class Producto extends Model
         date_default_timezone_set("America/Lima");
         $this->attributes["updated_at"] = Carbon::now();
     }
+
+    public function scopeFilterAdvance($query, $producto_id, $laboratorio_id)
+    {
+        // Filtro por ID de producto
+        if ($producto_id) {
+            $query->where('id', '=', $producto_id);
+        }
+
+        // Filtro por ID de laboratorio
+        if ($laboratorio_id) {
+            $query->where('laboratorio_id', '=', $laboratorio_id);
+        }
+
+        return $query;
+    }
     
     public function get_unidad()
     {

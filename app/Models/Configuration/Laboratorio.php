@@ -64,4 +64,17 @@ class Laboratorio extends Model
 
         return $nuevoCodigo;
     }
+
+    public function getProductImagenAttribute()
+    {
+        $link = null;
+        if($this->image){
+            if(str_contains($this->image,"https://") || str_contains($this->image,"http://")){
+                $link = $this->image;
+            }else{
+                $link =  env('APP_URL').'storage/'.$this->image;
+            }
+        }
+        return $link;
+    }
 }

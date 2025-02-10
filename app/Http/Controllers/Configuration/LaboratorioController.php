@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Configuration;
 
 use App\Http\Controllers\Controller;
+use App\Imports\LaboratorioImport;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LaboratorioController extends Controller
 {
@@ -28,7 +30,8 @@ class LaboratorioController extends Controller
                     "id" => $d->id,
                     "name" => $d->name,
                     "state" => $d->state,
-                    "image" => $d->image ? env("APP_URL")."storage/".$d->image : env("IMAGE_DEFAULT"),
+                    /* "image" => $d->image ? env("APP_URL")."storage/".$d->image : env("IMAGE_DEFAULT"), */
+                    "image" => $d->image ?? env("IMAGE_DEFAULT"),
                     "margen_minimo" => $d->margen_minimo,
                     "color" => $d->color,
                     "created_at" => $d->created_at->format("Y-m-d h:i A"),
@@ -269,5 +272,18 @@ class LaboratorioController extends Controller
             
             "codigo" => $codigo,
         ]);
-    }  
+    } 
+    
+    public function import_laboratorio(Request $request){
+        $request->validate([
+            "import_file" => 'required|file|mimes:xls,xlsx,csv'
+        ]);
+
+        $path = $request->file("import_file");
+        $data = Excel::import(new LaboratorioImport,$path);
+
+        return response()->json([
+            "message" => 200
+        ]);
+    }
 }

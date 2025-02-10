@@ -14,6 +14,7 @@ Route::group([
     Route::get('/laboratorio/recurso_para_crear', [LaboratorioController::class, 'getRecursosParaCrear']);
     Route::post('/laboratorio/{id}', [LaboratorioController::class, 'update']);
     Route::put('/laboratorio/restaurar/{id}', [LaboratorioController::class, 'restaurar']);
+    Route::post('/laboratorio/tool/import', [LaboratorioController::class, 'import_laboratorio']);
     Route::resource("laboratorio",LaboratorioController::class)->except(['update','create','edit']);
 
 });

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Exports\Product\DownloadProduct;
 use App\Http\Resources\Product\ProductCollection;
 use App\Http\Resources\Product\ProductResource;
+use App\Imports\ProductImport;
 use App\Models\Configuration\CategoriaProducto;
 use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
@@ -24,17 +25,22 @@ class ProductoController extends Controller
      */
     public function index(Request $request)
     {   
-        $search = $request->get('search');
+        $producto_id = $request->producto_id;
+        $laboratorio_id = $request->laboratorio_id;
 
-        $product = Producto::when($search, function($query, $search) {
-            return $query->where('id', '=', $search);
-        }, )
-        ->orderBy('id', 'desc')
-        ->paginate(25);
+        $products = Producto::filterAdvance($producto_id, $laboratorio_id)
+                        ->orderBy('id', 'desc')
+                        ->paginate(25);
                                 
         return response()->json([
-            'total' => $product->total(),
-            'products' => ProductCollection::make($product),
+            'total' => $products->total(),
+            'products' => ProductCollection::make($products),
+            'laboratorios' => Laboratorio::all()->map(function ($l) {
+                return [
+                    "id" => $l->id,
+                    "name" => $l->name,
+                ];
+            })
         ]);
     }
 
@@ -361,8 +367,27 @@ class ProductoController extends Controller
         ]);
     }
 
-    public function export_products(){
-        $products = Producto::orderBy("id","desc")->get();
+    public function import_product(Request $request){
+        $request->validate([
+            "import_file" => 'required|file|mimes:xls,xlsx,csv'
+        ]);
+
+        $path = $request->file("import_file");
+        $data = Excel::import(new ProductImport,$path);
+
+        return response()->json([
+            "message" => 200
+        ]);
+    }
+
+    public function export_products(Request $request){
+        $producto_id = $request->get("producto_id");
+        $laboratorio_id = $request->get("laboratorio_id");
+
+        $products = Producto::filterAdvance($producto_id, $laboratorio_id)
+        ->orderBy('laboratorio_id', 'asc')
+        ->paginate(25);
+
         return Excel::download(new DownloadProduct($products),"productos_descargados.xlsx");
     }
 }
