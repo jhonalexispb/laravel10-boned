@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProductoCatalogoDigemid;
 use App\Http\Controllers\ProductoController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,8 +12,10 @@ Route::group([
 ], function () {
     Route::get('/productos/recursos', [ProductoController::class, 'getRecursos']);
     Route::get('/productos/recursos_para_crear', [ProductoController::class, 'getRecursosParaCrear']);
+    Route::get('/productos/obtener_codigo_digemid', [ProductoCatalogoDigemid::class, 'getCodigoDigemid']);
     Route::put('/productos/restaurar/{id}', [ProductoController::class, 'restaurar']);
     Route::post('/productos/index', [ProductoController::class, 'index']);
-    Route::post('/productos/import', [ProductoController::class, 'import_product']);
+    
+    Route::post('/productos/import/externos/catalogo_digemid', [ProductoCatalogoDigemid::class, 'import_catalogo_digemid']);
     Route::resource("productos",ProductoController::class)->except(['create','edit','index']);
 });

@@ -7,9 +7,11 @@ use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\LineaFarmaceutica;
 use App\Models\Configuration\PrincipioActivo;
+use App\Models\Configuration\Warehouse;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\ProductoLotes;
 use App\Models\ProductoAtributtes\Unidad;
+use App\Models\ProductoConfiguration\ProductoAlmacenes;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -45,6 +47,7 @@ class Producto extends Model
         "maneja_lotes",
         "promocionable",
         "state",
+        "state_stock",
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -66,7 +69,7 @@ class Producto extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
 
-    public function scopeFilterAdvance($query, $producto_id, $laboratorio_id)
+    public function scopeFilterAdvance($query, $producto_id, $laboratorio_id, $state_stock, $warehouse_id)
     {
         // Filtro por ID de producto
         if ($producto_id) {
@@ -76,6 +79,16 @@ class Producto extends Model
         // Filtro por ID de laboratorio
         if ($laboratorio_id) {
             $query->where('laboratorio_id', '=', $laboratorio_id);
+        }
+
+        if ($state_stock) {
+            $query->where('state_stock', '=', $state_stock);
+        }
+
+        if ($warehouse_id) {
+            $query->whereHas('productoAlmacenes', function($sub) use($warehouse_id){
+                $sub->where('warehouse_id',$warehouse_id);
+            });
         }
 
         return $query;
@@ -141,6 +154,15 @@ class Producto extends Model
 
         // Si no se encuentra el laboratorio, devolver null o algún valor por defecto
         return null;
+    }
+
+    public function get_warehouse(){
+        return $this->hasManyThrough(Warehouse::class, ProductoAlmacenes::class);
+    }
+
+    public function productoAlmacenes()
+    {
+        return $this->hasMany(ProductoAlmacenes::class);
     }
 
 

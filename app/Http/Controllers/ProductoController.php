@@ -11,6 +11,7 @@ use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\LineaFarmaceutica;
 use App\Models\Configuration\PrincipioActivo;
+use App\Models\Configuration\Warehouse;
 use App\Models\Producto;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Unidad;
@@ -27,10 +28,16 @@ class ProductoController extends Controller
     {   
         $producto_id = $request->producto_id;
         $laboratorio_id = $request->laboratorio_id;
+        $state_stock = $request->state_stock;
+        $warehouse_id = $request->warehouse_id;
 
-        $products = Producto::filterAdvance($producto_id, $laboratorio_id)
+        $products = Producto::filterAdvance($producto_id, $laboratorio_id,$state_stock, $warehouse_id)
                         ->orderBy('id', 'desc')
                         ->paginate(25);
+
+        $num_products_disponible = Producto::where("state_stock",1)->count();
+        $num_products_por_agotar = Producto::where("state_stock",2)->count();
+        $num_products_agotado = Producto::where("state_stock",3)->count();
                                 
         return response()->json([
             'total' => $products->total(),
@@ -40,7 +47,11 @@ class ProductoController extends Controller
                     "id" => $l->id,
                     "name" => $l->name,
                 ];
-            })
+            }),
+            'num_products_disponible' => $num_products_disponible,
+            'num_products_por_agotar' => $num_products_por_agotar, 
+            'num_products_agotado' => $num_products_agotado,
+            'warehouses'  => Warehouse::where('state',1)->get()
         ]);
     }
 
@@ -383,8 +394,10 @@ class ProductoController extends Controller
     public function export_products(Request $request){
         $producto_id = $request->get("producto_id");
         $laboratorio_id = $request->get("laboratorio_id");
+        $state_stock = $request->get("state_stock");
+        $warehouse_id = $request->get("warehouse_id");
 
-        $products = Producto::filterAdvance($producto_id, $laboratorio_id)
+        $products = Producto::filterAdvance($producto_id, $laboratorio_id, $state_stock,$warehouse_id)
         ->orderBy('laboratorio_id', 'asc')
         ->paginate(25);
 

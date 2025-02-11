@@ -46,6 +46,7 @@ class ProductResource extends JsonResource
             "maneja_escalas" => $this->resource->maneja_escalas,
             "promocionable" => $this->resource->promocionable,
             "state" => $this->resource->state ?? 1,
+            "state_stock" => $this->resource->state_stock ?? 1,
             "created_at" => $this->resource->created_at->format("Y-m-d h:i A"),
         ];
     }
