@@ -7,11 +7,10 @@ use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\LineaFarmaceutica;
 use App\Models\Configuration\PrincipioActivo;
-use App\Models\Configuration\Warehouse;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
+use App\Models\ProductoAtributtes\Presentacion;
 use App\Models\ProductoAtributtes\ProductoLotes;
 use App\Models\ProductoAtributtes\Unidad;
-use App\Models\ProductoConfiguration\ProductoAlmacenes;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +34,7 @@ class Producto extends Model
         "categoria_id",
         "descripcion",
         "registro_sanitario",
+        "codigo_digemid",
         "pventa",
         "pcompra",
         "stock",
@@ -42,6 +42,7 @@ class Producto extends Model
         "imagen",
         "linea_farmaceutica_id",
         "fabricante_id",
+        "presentacion_id",
         "sale_boleta",
         "maneja_escalas",
         "maneja_lotes",
@@ -114,6 +115,11 @@ class Producto extends Model
         return $this->belongsTo(FabricanteProducto::class, 'fabricante_id'); // Fabricante es el modelo relacionado
     }
 
+    public function get_presentacion()
+    {
+        return $this->belongsTo(Presentacion::class, 'presentacion_id');
+    }
+
     public function get_condicion_almacenamiento()
     {
         return $this->belongsToMany(CondicionAlmacenamiento::class,'producto_cond_almac_relation','producto_id','cond_almac_id');
@@ -154,15 +160,6 @@ class Producto extends Model
 
         // Si no se encuentra el laboratorio, devolver null o algún valor por defecto
         return null;
-    }
-
-    public function get_warehouse(){
-        return $this->hasManyThrough(Warehouse::class, ProductoAlmacenes::class);
-    }
-
-    public function productoAlmacenes()
-    {
-        return $this->hasMany(ProductoAlmacenes::class);
     }
 
 

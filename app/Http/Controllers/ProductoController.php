@@ -14,6 +14,7 @@ use App\Models\Configuration\PrincipioActivo;
 use App\Models\Configuration\Warehouse;
 use App\Models\Producto;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
+use App\Models\ProductoAtributtes\Presentacion;
 use App\Models\ProductoAtributtes\Unidad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -76,6 +77,8 @@ class ProductoController extends Controller
             'promocionable' => 'required|boolean',
             'principio_activo_id' => 'nullable|array',
             'principio_activo_id.*' => 'exists:principio_activo,id',
+            'cond_almac_id' => 'nullable|array',
+            'cond_almac_id.*' => 'exists:condicion_almacenamiento,id',
         ]);
 
         DB::beginTransaction();  // Inicia la transacción
@@ -149,6 +152,10 @@ class ProductoController extends Controller
             // Asociar los principios activos usando sync()
             if (!empty($request->principio_activo_id)) {
                 $producto->get_principios_activos()->sync($request->principio_activo_id);
+            }
+
+            if (!empty($request->cond_almac_id)) {
+                $producto->get_condicion_almacenamiento()->sync($request->cond_almac_id);
             }
 
             // Si todo va bien, confirmamos la transacción
@@ -348,6 +355,13 @@ class ProductoController extends Controller
             }),
         
             "categorias" => CategoriaProducto::where('state', 1)->get()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                ];
+            }),
+
+            "presentaciones" => Presentacion::where('state', 1)->get()->map(function ($p) {
                 return [
                     "id" => $p->id,
                     "name" => $p->name,

@@ -34,7 +34,7 @@ return new class extends Migration
             $table->foreign('fabricante_id')->references('id')->on('fabricantes_producto')->onDelete('restrict');
             $table->boolean('sale_boleta')->default(0)->comment('1 sale en boleta y 0 no sale en boleta');
             $table->boolean('state')->default(1)->comment('1 es activo y 0 es inactivo');
-            $table->tinyInteger('state_stock',false,true)->default(1)->comment('1 es disponible y 2 es por agotar 3 agotado');
+            $table->tinyInteger('state_stock',false,true)->default(3)->comment('1 es disponible y 2 es por agotar 3 agotado');
             $table->timestamps();
             $table->softDeletes();
         });

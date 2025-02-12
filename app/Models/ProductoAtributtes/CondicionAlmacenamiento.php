@@ -16,6 +16,7 @@ class CondicionAlmacenamiento extends Model
     protected $table = "condicion_almacenamiento";
     protected $fillable = [
         "name",
+        "state",
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -24,7 +25,7 @@ class CondicionAlmacenamiento extends Model
         return LogOptions::defaults()
             ->logAll()  // Si deseas registrar todos los cambios
             ->logOnlyDirty()  // Opción de solo registrar cambios realizados (no todos los atributos)
-            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Unidades");
+            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Condicion almacenamiento");
     }
 
     public function setCreatedAtAttribute($value){

@@ -25,6 +25,8 @@ require __DIR__.'/routes/serviciosSunatReniec.php';
 require __DIR__.'/routes/fabricantes-productos.php';
 require __DIR__.'/routes/lineas_farmaceuticas.php';
 require __DIR__.'/routes/productos.php';
+require __DIR__.'/routes/condicion-almacenamiento.php';
+require __DIR__.'/routes/presentacion.php';
 
 /*
 |--------------------------------------------------------------------------
