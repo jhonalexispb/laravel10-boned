@@ -45,7 +45,7 @@ class ProductResource extends JsonResource
             "condicion_almacenamiento" => $this->resource->get_condicion_almacenamiento->pluck('id')->toArray(),
             "principios_activos" => $this->resource->get_principios_activos->pluck('id')->toArray(),
             "sale_boleta" => $this->resource->sale_boleta,
-            "maneja_lotes" => $this->resource->maneja_lotes,
+            /* "maneja_lotes" => $this->resource->maneja_lotes, */
             "maneja_escalas" => $this->resource->maneja_escalas,
             "promocionable" => $this->resource->promocionable,
             "state" => $this->resource->state ?? 1,

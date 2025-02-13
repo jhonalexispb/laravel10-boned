@@ -45,7 +45,7 @@ class Producto extends Model
         "presentacion_id",
         "sale_boleta",
         "maneja_escalas",
-        "maneja_lotes",
+        /* "maneja_lotes", */
         "promocionable",
         "state",
         "state_stock",
@@ -70,7 +70,7 @@ class Producto extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
 
-    public function scopeFilterAdvance($query, $producto_id, $laboratorio_id, $state_stock, $warehouse_id)
+    public function scopeFilterAdvance($query, $producto_id, $laboratorio_id, $state_stock)
     {
         // Filtro por ID de producto
         if ($producto_id) {
@@ -86,11 +86,11 @@ class Producto extends Model
             $query->where('state_stock', '=', $state_stock);
         }
 
-        if ($warehouse_id) {
+        /* if ($warehouse_id) {
             $query->whereHas('productoAlmacenes', function($sub) use($warehouse_id){
                 $sub->where('warehouse_id',$warehouse_id);
             });
-        }
+        } */
 
         return $query;
     }

@@ -11,7 +11,6 @@ use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\LineaFarmaceutica;
 use App\Models\Configuration\PrincipioActivo;
-use App\Models\Configuration\Warehouse;
 use App\Models\Producto;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Presentacion;
@@ -30,9 +29,8 @@ class ProductoController extends Controller
         $producto_id = $request->producto_id;
         $laboratorio_id = $request->laboratorio_id;
         $state_stock = $request->state_stock;
-        $warehouse_id = $request->warehouse_id;
 
-        $products = Producto::filterAdvance($producto_id, $laboratorio_id,$state_stock, $warehouse_id)
+        $products = Producto::filterAdvance($producto_id, $laboratorio_id,$state_stock)
                         ->orderBy('id', 'desc')
                         ->paginate(25);
 
@@ -51,8 +49,7 @@ class ProductoController extends Controller
             }),
             'num_products_disponible' => $num_products_disponible,
             'num_products_por_agotar' => $num_products_por_agotar, 
-            'num_products_agotado' => $num_products_agotado,
-            'warehouses'  => Warehouse::where('state',1)->get()
+            'num_products_agotado' => $num_products_agotado
         ]);
     }
 
@@ -72,7 +69,7 @@ class ProductoController extends Controller
             'linea_farmaceutica_id' => 'required|exists:lineas_farmaceuticas,id',
             'fabricante_id' => 'required|exists:fabricantes_producto,id',
             'sale_boleta' => 'required|boolean',
-            'maneja_lotes' => 'required|boolean',
+            /* 'maneja_lotes' => 'required|boolean', */
             'maneja_escalas' => 'required|boolean',
             'promocionable' => 'required|boolean',
             'principio_activo_id' => 'nullable|array',
@@ -204,11 +201,13 @@ class ProductoController extends Controller
             'linea_farmaceutica_id' => 'required|exists:lineas_farmaceuticas,id',
             'fabricante_id' => 'required|exists:fabricantes_producto,id',
             'sale_boleta' => 'required|boolean',
-            'maneja_lotes' => 'required|boolean',
+            /* 'maneja_lotes' => 'required|boolean', */
             'maneja_escalas' => 'required|boolean',
             'promocionable' => 'required|boolean',
             'principio_activo_id' => 'nullable|array',
             'principio_activo_id.*' => 'exists:principio_activo,id',
+            'cond_almac_id' => 'nullable|array',
+            'cond_almac_id.*' => 'exists:condicion_almacenamiento,id',
         ]);
 
         DB::beginTransaction();  // Inicia la transacción
@@ -285,9 +284,10 @@ class ProductoController extends Controller
             $producto->update($request->all());
 
             // Asociar los principios activos usando sync()
-            if (!empty($request->principio_activo_id)) {
-                $producto->get_principios_activos()->sync($request->principio_activo_id);
-            }
+            
+            $producto->get_principios_activos()->sync($request->principio_activo_id);
+            
+            $producto->get_condicion_almacenamiento()->sync($request->cond_almac_id);
 
             // Si todo va bien, confirmamos la transacción
             DB::commit();
@@ -409,9 +409,8 @@ class ProductoController extends Controller
         $producto_id = $request->get("producto_id");
         $laboratorio_id = $request->get("laboratorio_id");
         $state_stock = $request->get("state_stock");
-        $warehouse_id = $request->get("warehouse_id");
 
-        $products = Producto::filterAdvance($producto_id, $laboratorio_id, $state_stock,$warehouse_id)
+        $products = Producto::filterAdvance($producto_id, $laboratorio_id, $state_stock)
         ->orderBy('laboratorio_id', 'asc')
         ->paginate(25);
 
