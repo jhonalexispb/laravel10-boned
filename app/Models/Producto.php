@@ -9,6 +9,7 @@ use App\Models\Configuration\LineaFarmaceutica;
 use App\Models\Configuration\PrincipioActivo;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Presentacion;
+use App\Models\ProductoAtributtes\ProductoEscala;
 use App\Models\ProductoAtributtes\ProductoLotes;
 use App\Models\ProductoAtributtes\Unidad;
 use Carbon\Carbon;
@@ -160,6 +161,11 @@ class Producto extends Model
 
         // Si no se encuentra el laboratorio, devolver null o algún valor por defecto
         return null;
+    }
+
+    public function get_escalas()
+    {
+        return $this->hasMany(ProductoEscala::class, 'producto_id');
     }
 
 
