@@ -183,7 +183,7 @@ class ProductoEscalaController extends Controller
 
         $escalas = $escalas->reject(function($item) use ($escalaId) {
             return $item->id == $escalaId;
-        });
+        })->values();
 
         $escalaAnterior = null;
         $escalaSiguiente = null;
@@ -191,7 +191,7 @@ class ProductoEscalaController extends Controller
         foreach ($escalas as $index => $esc) {
             if ($esc->cantidad < $request->cantidad) {
                 $escalaSiguiente = $esc;
-                $escalaAnterior = $esc[$index - 1] ?? null;
+                $escalaAnterior = isset($escalas[$index - 1]) ? $escalas[$index - 1] : null;
                 break;
             }
         }
