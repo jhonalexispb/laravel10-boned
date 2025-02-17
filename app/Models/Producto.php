@@ -168,6 +168,11 @@ class Producto extends Model
         return $this->hasMany(ProductoEscala::class, 'producto_id');
     }
 
+    public function get_lotes()
+    {
+        return $this->hasMany(ProductoLotes::class, 'producto_id');
+    }
+
 
 
 
@@ -179,10 +184,5 @@ class Producto extends Model
     public function get_categoria()
     {
         return $this->belongsToMany(CategoriaProducto::class,'producto_categoria_relation','producto_id','categoria_id');
-    }
-
-    public function get_lotes()
-    {
-        return $this->hasMany(ProductoLotes::class,'producto_id');
     }
 }

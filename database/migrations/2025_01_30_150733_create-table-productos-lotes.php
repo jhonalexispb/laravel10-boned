@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreign('producto_id')->references('id')->on('productos')->onDelete('cascade');
             $table->date('fecha_vencimiento');
             $table->string('lote');
-            $table->integer('cantidad');
+            $table->integer('cantidad')->default(0);
             $table->boolean('state')->default(1)->comment('1 es activo se puede vender y 2 es inactivo no se puede vender');
             $table->timestamps();
             $table->softDeletes();
