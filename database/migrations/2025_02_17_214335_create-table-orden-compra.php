@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('ordenes_compra', function (Blueprint $table) {
             $table->id();
+            $table->string('codigo')->unique();
             $table->unsignedBigInteger('proveedor_id');
             $table->foreign('proveedor_id')->references('id')->on('proveedor')->onDelete('restrict');
             $table->unsignedBigInteger('laboratorio_id');

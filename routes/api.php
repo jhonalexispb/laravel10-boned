@@ -30,6 +30,7 @@ require __DIR__.'/routes/presentacion.php';
 require __DIR__.'/routes/producto_atributtes/gestionarProducto.php';
 require __DIR__.'/routes/producto_atributtes/escalasProducto.php';
 require __DIR__.'/routes/producto_atributtes/lotesProductos.php';
+require __DIR__.'/routes/orden_compra.php';
 
 /*
 |--------------------------------------------------------------------------

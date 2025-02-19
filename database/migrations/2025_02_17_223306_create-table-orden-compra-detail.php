@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('orden_compra_id');
             $table->foreign('orden_compra_id')->references('id')->on('ordenes_compra')->onDelete('cascade');
-            $table->unsignedBigInteger('n_comprobante_id');
+            $table->unsignedBigInteger('n_comprobante_id')->nullable();
             $table->foreign('n_comprobante_id')->references('id')->on('ordenes_compra')->onDelete('cascade');
             $table->unsignedBigInteger('producto_id');
             $table->foreign('producto_id')->references('id')->on('productos')->onDelete('restrict');

@@ -1,37 +1,36 @@
 <?php
 
-namespace App\Models\Configuration;
+namespace App\Models\OrdenCompraAtributtes;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
-class Proveedor extends Model
+class NDocumentoOrdenCompra extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
-    protected $table = 'proveedor';
-
+    protected $table = "ordenes_compra_n_comprobantes";
     protected $fillable = [
-        "razonSocial",
-        "name",
-        "address",
-        "iddistrito",
-        "email",
+        "type_comprobante_compra_id",
+        "serie",
+        "n_documento",
+        "importe",
+        "igv",
+        "total",
         "state",
-        "idrepresentante",
     ];
-    
+
     public function getActivitylogOptions(): LogOptions
     {
         // Aquí defines cómo se registrarán las actividades
         return LogOptions::defaults()
             ->logAll()  // Si deseas registrar todos los cambios
             ->logOnlyDirty()  // Opción de solo registrar cambios realizados (no todos los atributos)
-            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Proveedor");
+            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Condicion almacenamiento");
     }
 
     public function setCreatedAtAttribute($value){
@@ -44,17 +43,7 @@ class Proveedor extends Model
         $this->attributes["updated_at"] = Carbon::now();
     }
 
-    public function ubicacion(){
-        return $this->belongsTo(Distrito::class, 'iddistrito');
+    public function getTipoComprobantePago(){
+        return $this->belongsTo(TipoComprobantePagoCompra::class, "type_comprobante_compra_id");
     }
-
-    public function representante(){
-        return $this->belongsTo(RepresentanteProveedor::class, 'idrepresentante');
-    }
-
-    public function proveedorLaboratorios()
-    {
-        return $this->hasMany(ProveedorLaboratorio::class, 'proveedor_id');
-    }
-
 }
