@@ -54,14 +54,14 @@ class LaboratorioController extends Controller
      */
     public function store(Request $request)
     {   
-        $proveedores = json_decode($request->input('proveedores'), true);
-        $request->merge(['proveedores' => $proveedores]);
+        /* $proveedores = json_decode($request->input('proveedores'), true);
+        $request->merge(['proveedores' => $proveedores]); */
         $request->validate([
             'image_laboratorio' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
             'margen_minimo' => 'required|numeric|regex:/^\d+(\.\d{1,2})?$/',
             'color' => 'required|string|max:7',
-            'proveedores' => 'required|array|min:1',  // Validamos que proveedores sea un array y contenga al menos un proveedor
-            'proveedores.*' => 'exists:proveedor,id', // Verifica que cada ID de proveedor sea válido y exista en la tabla `proveedor`
+            /* 'proveedores' => 'required|array|min:1',
+            'proveedores.*' => 'exists:proveedor,id', */
         ]);
 
         $LABORATORIO_EXIST = Laboratorio::withTrashed()
@@ -93,9 +93,9 @@ class LaboratorioController extends Controller
 
         $laboratorio = Laboratorio::create(  $request->all());
 
-        $laboratorio->proveedores()->attach($proveedores);
+        /* $laboratorio->proveedores()->attach($proveedores); */
 
-        $laboratorio->load('proveedores');
+        /* $laboratorio->load('proveedores'); */
 
         return response()->json([
             "message" => 200,

@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Configuration;
 
 use App\Http\Controllers\Controller;
 use App\Models\Configuration\Distrito;
+use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
+use App\Models\Configuration\ProveedorLaboratorio;
 use App\Models\Configuration\RepresentanteProveedor;
 use Illuminate\Http\Request;
 
@@ -246,4 +248,98 @@ class ProveedorController extends Controller
             })
         ]);
     }     
+
+    public function getLaboratorios(Request $request)
+    {
+        $request->validate([
+            'proveedor_id' => 'required|exists:proveedor,id',
+        ]);
+        $proveedor = Proveedor::where('id', $request->proveedor_id)->first();
+
+        return response()->json([
+            "proveedor" => $proveedor->name,
+            "laboratorios_proveedor" => ProveedorLaboratorio::where('proveedor_id',$request->proveedor_id)
+            ->with([
+                'laboratorios',
+            ])
+            ->orderBy('id','desc')
+            ->get()
+            ->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "laboratorio_id" => $p->laboratorio_id,
+                    "name" => $p->laboratorios->name,
+                    "margen_minimo" => $p->margen_minimo,
+                ];
+            }),
+            "laboratorios" => Laboratorio::where('state','1')->get()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                    "margen_minimo" => $p->margen_minimo,
+                ];
+            }),
+        ]);
+    } 
+    
+    public function registerLaboratorioProveedor(Request $request){
+        $request->validate([
+            'proveedor_id' => 'required|exists:proveedor,id',
+            'laboratorio_id' => 'required|exists:laboratorio,id',
+            'margen_minimo' => 'required|numeric|min:0.01',
+        ]);
+
+        $existingRelacion = ProveedorLaboratorio::where('proveedor_id', $request->proveedor_id)
+                                            ->where('laboratorio_id', $request->laboratorio_id)
+                                            ->first();
+
+        if ($existingRelacion) {
+            return response() -> json([
+                "message" => 403,
+                "message_text" => "el proveedor ".$existingRelacion->name." ya existe"
+            ],422);
+        }
+
+        $relacion = ProveedorLaboratorio::create(  $request->all());
+
+        return response()->json([
+            "relacion" => [
+                "id" => $relacion->id,
+                "laboratorio_id" => $relacion->laboratorio_id,
+                "name" => $relacion->laboratorios->name,
+                "margen_minimo" => $relacion->margen_minimo,
+            ],
+        ]);
+    }
+
+    public function updateLaboratorioProveedor(Request $request, String $id){
+        $request->validate([
+            'proveedor_id' => 'required|exists:proveedor,id',
+            'laboratorio_id' => 'required|exists:laboratorio,id',
+            'margen_minimo' => 'required|numeric|min:0.01',
+        ]);
+
+        $relacion = ProveedorLaboratorio::findOrFail($id);
+
+        $relacion->update($request->all());
+
+        return response()->json([
+            "relacion" => [
+                "id" => $relacion->id,
+                "laboratorio_id" => $relacion->laboratorio_id,
+                "name" => $relacion->laboratorios->name,
+                "margen_minimo" => $relacion->margen_minimo,
+            ],
+        ]);
+    }
+
+    public function deleteLaboratorioProveedor(String $id){
+
+        $d = ProveedorLaboratorio::findOrFail($id);
+        $d->delete();
+
+        return response()->json([
+            "message" => 200
+        ]);
+    }
 }

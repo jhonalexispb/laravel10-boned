@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
@@ -12,7 +11,7 @@ use Illuminate\Http\Request;
 
 class OrdenCompraController extends Controller
 {
-    public function getRecursosParaCrear(Request $request)
+    public function getRecursosParaCrear()
     {   
         $codigo = OrdenCompra::generarCodigo();
         if (!$codigo) {
