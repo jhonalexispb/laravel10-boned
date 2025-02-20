@@ -35,8 +35,10 @@ class OrdenCompraController extends Controller
                     "representante_celular" => $p->idrepresentante ? $p->representante->celular : '',
                     "laboratorios" => $p->proveedorLaboratorios->map(function ($pl) {
                         return [
-                            "id" => $pl->laboratorios->id,
+                            "id" => $pl->id,
+                            "laboratorio_id" => $pl->laboratorios->id,
                             "name" => $pl->laboratorios->name,
+                            "name_margen" => $pl->laboratorios->name." (".$pl->margen_minimo."%)",
                             "margen_minimo" => $pl->margen_minimo,
                         ];
                     }),
@@ -84,6 +86,7 @@ class OrdenCompraController extends Controller
                     "laboratorio" => $p->get_laboratorio->name,
                     "nombre" => $p->nombre,
                     "caracteristicas" => $p->caracteristicas,
+                    "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
                     "pventa" => $p->pventa ?? '0.0',
                     "stock" => $p->stock ?? '0',
                     "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),

@@ -269,6 +269,7 @@ class ProveedorController extends Controller
                     "id" => $p->id,
                     "laboratorio_id" => $p->laboratorio_id,
                     "name" => $p->laboratorios->name,
+                    "name_margen" => $p->laboratorios->name." (".$p->margen_minimo."%)",
                     "margen_minimo" => $p->margen_minimo,
                 ];
             }),
@@ -296,7 +297,7 @@ class ProveedorController extends Controller
         if ($existingRelacion) {
             return response() -> json([
                 "message" => 403,
-                "message_text" => "el proveedor ".$existingRelacion->name." ya existe"
+                "message_text" => "la relacion ya existe"
             ],422);
         }
 
@@ -307,6 +308,7 @@ class ProveedorController extends Controller
                 "id" => $relacion->id,
                 "laboratorio_id" => $relacion->laboratorio_id,
                 "name" => $relacion->laboratorios->name,
+                "name_margen" => $relacion->laboratorios->name." (".$relacion->margen_minimo."%)",
                 "margen_minimo" => $relacion->margen_minimo,
             ],
         ]);
@@ -319,6 +321,18 @@ class ProveedorController extends Controller
             'margen_minimo' => 'required|numeric|min:0.01',
         ]);
 
+        $existingRelacion = ProveedorLaboratorio::where('proveedor_id', $request->proveedor_id)
+                                            ->where('laboratorio_id', $request->laboratorio_id)
+                                            ->where('id','<>',$id)
+                                            ->first();
+
+        if ($existingRelacion) {
+            return response() -> json([
+                "message" => 403,
+                "message_text" => "la relacion ya existe"
+            ],422);
+        }
+
         $relacion = ProveedorLaboratorio::findOrFail($id);
 
         $relacion->update($request->all());
@@ -328,6 +342,7 @@ class ProveedorController extends Controller
                 "id" => $relacion->id,
                 "laboratorio_id" => $relacion->laboratorio_id,
                 "name" => $relacion->laboratorios->name,
+                "name_margen" => $relacion->laboratorios->name." (".$relacion->margen_minimo."%)",
                 "margen_minimo" => $relacion->margen_minimo,
             ],
         ]);
