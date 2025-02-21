@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\Product\ProductResource;
 use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
@@ -84,6 +85,7 @@ class OrdenCompraController extends Controller
                     "sku" => $p->sku,
                     "tproducto" => $p->tproducto,
                     "laboratorio" => $p->get_laboratorio->name,
+                    "laboratorio_id" => $p->laboratorio_id,
                     "nombre" => $p->nombre,
                     "caracteristicas" => $p->caracteristicas,
                     "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
@@ -101,5 +103,33 @@ class OrdenCompraController extends Controller
                 ];
             })
         ]);
-    }   
+    }  
+    
+    public function getProductDetail(String $id)
+    {
+        $producto = Producto::with([
+            'get_lotes' => function ($query) {
+                $query->where('cantidad', '>', 0)
+                    ->orderBy('fecha_vencimiento','asc')
+                    ->select('lote', 'cantidad', 'fecha_vencimiento'); // Eliminamos producto_id
+            },
+            'get_escalas' => function ($query) {
+                $query->where('state', 1)
+                    ->orderBy('cantidad','asc')
+                    ->select('cantidad', 'precio'); // Eliminamos producto_id
+            }
+        ])->where('id', $id)->first();
+
+        // Si no existe, retornar error
+        if (!$producto) {
+            return response()->json(['error' => 'Producto no encontrado'], 404);
+        }
+
+        return response()->json([
+            "stock" => $producto->stock,
+            "pventa" => $producto->pventa,
+            "lotes" => $producto->get_lotes,
+            "escalas" => $producto->get_escalas,
+        ]);
+    } 
 }

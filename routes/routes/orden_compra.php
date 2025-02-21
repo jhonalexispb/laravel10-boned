@@ -11,5 +11,6 @@ Route::group([
 ], function () {
     //banco
     Route::get('/orden_compra/recursos_crear', [OrdenCompraController::class, 'getRecursosParaCrear']);
+    Route::get('/orden_compra/recursos_crear/productos/{id}', [OrdenCompraController::class, 'getProductDetail']);
     Route::post('/orden_compra/recursos_crear/productos', [OrdenCompraController::class, 'getProductosByLaboratorio']);
 });
