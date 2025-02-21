@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\Product\ProductResource;
 use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
@@ -111,12 +110,12 @@ class OrdenCompraController extends Controller
             'get_lotes' => function ($query) {
                 $query->where('cantidad', '>', 0)
                     ->orderBy('fecha_vencimiento','asc')
-                    ->select('lote', 'cantidad', 'fecha_vencimiento'); // Eliminamos producto_id
+                    ->select('lote', 'cantidad', 'fecha_vencimiento');
             },
             'get_escalas' => function ($query) {
                 $query->where('state', 1)
                     ->orderBy('cantidad','asc')
-                    ->select('cantidad', 'precio'); // Eliminamos producto_id
+                    ->select('cantidad', 'precio');
             }
         ])->where('id', $id)->first();
 
@@ -125,11 +124,35 @@ class OrdenCompraController extends Controller
             return response()->json(['error' => 'Producto no encontrado'], 404);
         }
 
+        $hoy = now();
+
+        $escalas = $producto->get_escalas()->where('state', 1)->orderBy('cantidad','asc')->get();
+
+        $lotes = $producto->get_lotes()->where('cantidad', '>', 0)->orderBy('fecha_vencimiento','asc')->get();
+
         return response()->json([
             "stock" => $producto->stock,
             "pventa" => $producto->pventa,
-            "lotes" => $producto->get_lotes,
-            "escalas" => $producto->get_escalas,
+            "escalas" => $escalas->map(function($b){
+                return [
+                    "id" => $b->id,
+                    "cantidad" => $b->cantidad,
+                    "precio" => $b->precio,
+                    "state" => $b->state,
+                ];
+            }),
+            "lotes" => $lotes->map(function($b) use ($hoy){
+                $fechaVencimiento = \Carbon\Carbon::parse($b->fecha_vencimiento);
+                $dias_faltantes = $hoy->diffInDays($fechaVencimiento, false);
+                return [
+                    "id" => $b->id,
+                    "fecha_vencimiento" => $fechaVencimiento,
+                    "dias_faltantes" => $dias_faltantes,
+                    "lote" => $b->lote,
+                    "cantidad" => $b->cantidad,
+                    "state" => $b->state,
+                ];
+            }),
         ]);
     } 
 }
