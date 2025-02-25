@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->string('imagen')->nullable();
-            $table->string('color')->nullable();
+            $table->string('color')->default('#4145ff');
             $table->boolean('state')->default(1);
             $table->decimal('margen_minimo')->default(20);
             $table->timestamps();

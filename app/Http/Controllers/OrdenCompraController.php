@@ -22,7 +22,7 @@ class OrdenCompraController extends Controller
             "codigo" => $codigo,
             "proveedores" => Proveedor::where('state', 1)
             ->with([
-                'proveedorLaboratorios.laboratorios:id,name',
+                'proveedorLaboratorios.laboratorios:id,name,color',
             ])
             ->get()
             ->map(function ($p) {
@@ -37,6 +37,7 @@ class OrdenCompraController extends Controller
                         return [
                             "id" => $pl->id,
                             "laboratorio_id" => $pl->laboratorios->id,
+                            "color" => $pl->laboratorios->color,
                             "name" => $pl->laboratorios->name,
                             "name_margen" => $pl->laboratorios->name." (".$pl->margen_minimo."%)",
                             "margen_minimo" => $pl->margen_minimo,
@@ -85,6 +86,7 @@ class OrdenCompraController extends Controller
                     "tproducto" => $p->tproducto,
                     "laboratorio" => $p->get_laboratorio->name,
                     "laboratorio_id" => $p->laboratorio_id,
+                    "color_laboratorio" => $p->get_laboratorio->color,
                     "nombre" => $p->nombre,
                     "caracteristicas" => $p->caracteristicas,
                     "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
