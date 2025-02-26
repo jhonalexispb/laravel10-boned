@@ -14,10 +14,12 @@ use App\Models\Configuration\PrincipioActivo;
 use App\Models\Producto;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Presentacion;
+use App\Models\ProductoAtributtes\ProductoImagen;
 use App\Models\ProductoAtributtes\Unidad;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class ProductoController extends Controller
 {
@@ -415,5 +417,94 @@ class ProductoController extends Controller
         ->paginate(25);
 
         return Excel::download(new DownloadProduct($products),"productos_descargados.xlsx");
+    }
+
+    public function update_images(Request $request, string $id){
+
+        if (!$request->hasFile('mainImage') && empty($request->imagenes_extra)) {
+            return response()->json([
+                "message" => 403,
+                'message_text' => 'No se ha enviado ninguna imagen.'
+            ], 422); // 400 es un código de error por solicitud incorrecta
+        }
+        $request->validate([
+            'mainImage' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'imagenes_extra.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        ]);
+
+
+        $producto = Producto::findOrFail($id);
+        DB::beginTransaction();
+
+        try {
+            if($request->hasFile('mainImage')){
+                if($producto->imagen){
+                    $publicId = $producto->imagen_public_id;
+                    if ($publicId) {
+                        Cloudinary::destroy($publicId);
+                    }
+                }
+                
+                $uploadedFile = Cloudinary::upload($request->file('mainImage')->getRealPath(), [
+                    'folder' => 'Productos',
+                ]);
+                $imageUrl = $uploadedFile->getSecurePath();
+                $publicId = $uploadedFile->getPublicId();
+    
+                $producto->update([
+                    'imagen' => $imageUrl,
+                    'imagen_public_id' => $publicId
+                ]);
+            }
+            
+            if(!empty($request->imagenes_extra)){
+                $imagenesExistentes = ProductoImagen::where('producto_id', $id)->get();
+                foreach ($imagenesExistentes as $imagen) {
+                    $publicId = $imagen->imagen_public_id; // Asegúrate de guardar el public_id en la base de datos
+                    if ($publicId) {
+                        Cloudinary::destroy($publicId); // Eliminar cada imagen extra de Cloudinary
+                    }
+                }
+
+                ProductoImagen::where('producto_id', $id)->delete();
+
+                foreach ($request->imagenes_extra as $index => $extraImage) {
+                    if ($extraImage) {
+                        try {
+                            $uploadedFile = Cloudinary::upload($extraImage->getRealPath(), [
+                                'folder' => 'Productos_extra',
+                            ]);
+                            $imageUrl = $uploadedFile->getSecurePath();
+                            $publicId = $uploadedFile->getPublicId();
+        
+                            ProductoImagen::create([
+                                'producto_id' => $id,
+                                'image' => $imageUrl,
+                                'imagen_public_id' => $publicId
+                            ]);
+                        } catch (\Exception $e) {
+                            DB::rollBack();
+                            return response()->json([
+                                "message" => 403,
+                                'message_text' => 'Error al subir las imagenes extras: ' . $e->getMessage()
+                            ], 422);
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Imágenes actualizadas correctamente',
+                'mainImage' => $producto->imagen,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                "message" => 403,
+                'message_text' => "Error al subir las imagenes del producto"
+            ], 422);
+        }
+
     }
 }

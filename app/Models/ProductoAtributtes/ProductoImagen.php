@@ -6,18 +6,18 @@ use App\Models\Producto;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class ProductoImagen extends Model
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, LogsActivity;
 
-    protected $table = "producto_lote_relation";
+    protected $table = "producto_image_relation";
     protected $fillable = [
         "producto_id",
         "image",
+        "imagen_public_id",
     ];
 
     public function getActivitylogOptions(): LogOptions

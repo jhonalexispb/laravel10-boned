@@ -10,6 +10,7 @@ use App\Models\Configuration\PrincipioActivo;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Presentacion;
 use App\Models\ProductoAtributtes\ProductoEscala;
+use App\Models\ProductoAtributtes\ProductoImagen;
 use App\Models\ProductoAtributtes\ProductoLotes;
 use App\Models\ProductoAtributtes\Unidad;
 use Carbon\Carbon;
@@ -41,6 +42,7 @@ class Producto extends Model
         "stock",
         "stock_seguridad",
         "imagen",
+        "imagen_public_id",
         "linea_farmaceutica_id",
         "fabricante_id",
         "presentacion_id",
@@ -171,6 +173,11 @@ class Producto extends Model
     public function get_lotes()
     {
         return $this->hasMany(ProductoLotes::class, 'producto_id');
+    }
+
+    public function images_extra()
+    {
+        return $this->hasMany(ProductoImagen::class, 'producto_id');
     }
 
 

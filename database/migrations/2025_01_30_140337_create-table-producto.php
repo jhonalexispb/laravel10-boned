@@ -28,6 +28,7 @@ return new class extends Migration
             $table->integer('stock')->default(0);
             $table->integer('stock_seguridad')->default(0);
             $table->string('imagen')->nullable();
+            $table->string('imagen_public_id')->nullable();
             $table->unsignedBigInteger('linea_farmaceutica_id');
             $table->foreign('linea_farmaceutica_id')->references('id')->on('lineas_farmaceuticas')->onDelete('restrict');
             $table->unsignedBigInteger('fabricante_id');
