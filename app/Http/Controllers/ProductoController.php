@@ -429,7 +429,23 @@ class ProductoController extends Controller
         }
         $request->validate([
             'mainImage' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
-            'imagenes_extra.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'imagenes_extra.*' => [
+                'nullable',
+                function ($attribute, $value, $fail) {
+                    // Si el valor es una URL, validamos que sea una URL válida
+                    if (is_null($value)) {
+                        return;
+                    }
+                    if (filter_var($value, FILTER_VALIDATE_URL)) {
+                        return;  // Si es una URL válida, no hacemos nada
+                    }
+                    // Si no es una URL, entonces debe ser una imagen
+                    if (is_a($value, 'Symfony\Component\HttpFoundation\File\UploadedFile') && !$value->isValid()) {
+                        $fail('El campo debe ser una imagen válida.');
+                    }
+                },
+            ],
+            'imagenes_extra_ids.*' => 'nullable|string',
         ]);
 
 
@@ -437,62 +453,16 @@ class ProductoController extends Controller
         DB::beginTransaction();
 
         try {
-            if($request->hasFile('mainImage')){
-                if($producto->imagen){
-                    $publicId = $producto->imagen_public_id;
-                    if ($publicId) {
-                        Cloudinary::destroy($publicId);
-                    }
-                }
-                
-                $uploadedFile = Cloudinary::upload($request->file('mainImage')->getRealPath(), [
-                    'folder' => 'Productos',
-                ]);
-                $imageUrl = $uploadedFile->getSecurePath();
-                $publicId = $uploadedFile->getPublicId();
+            // Actualizar la imagen principal
+            if ($request->hasFile('mainImage')) {
+                $this->updateMainImage($producto, $request->file('mainImage'));
+            }
     
-                $producto->update([
-                    'imagen' => $imageUrl,
-                    'imagen_public_id' => $publicId
-                ]);
+            // Procesar imágenes extras
+            if (!empty($request->imagenes_extra)) {
+                $this->processExtraImages($producto, $request->imagenes_extra, $request->imagenes_extra_ids);
             }
-            
-            if(!empty($request->imagenes_extra)){
-                $imagenesExistentes = ProductoImagen::where('producto_id', $id)->get();
-                foreach ($imagenesExistentes as $imagen) {
-                    $publicId = $imagen->imagen_public_id; // Asegúrate de guardar el public_id en la base de datos
-                    if ($publicId) {
-                        Cloudinary::destroy($publicId); // Eliminar cada imagen extra de Cloudinary
-                    }
-                }
-
-                ProductoImagen::where('producto_id', $id)->delete();
-
-                foreach ($request->imagenes_extra as $index => $extraImage) {
-                    if ($extraImage) {
-                        try {
-                            $uploadedFile = Cloudinary::upload($extraImage->getRealPath(), [
-                                'folder' => 'Productos_extra',
-                            ]);
-                            $imageUrl = $uploadedFile->getSecurePath();
-                            $publicId = $uploadedFile->getPublicId();
-        
-                            ProductoImagen::create([
-                                'producto_id' => $id,
-                                'image' => $imageUrl,
-                                'imagen_public_id' => $publicId
-                            ]);
-                        } catch (\Exception $e) {
-                            DB::rollBack();
-                            return response()->json([
-                                "message" => 403,
-                                'message_text' => 'Error al subir las imagenes extras: ' . $e->getMessage()
-                            ], 422);
-                        }
-                    }
-                }
-            }
-
+    
             DB::commit();
             return response()->json([
                 'message' => 'Imágenes actualizadas correctamente',
@@ -502,9 +472,130 @@ class ProductoController extends Controller
             DB::rollBack();
             return response()->json([
                 "message" => 403,
-                'message_text' => "Error al subir las imagenes del producto"
+                'message_text' => "Error al subir las imágenes del producto: " . $e->getMessage()
             ], 422);
         }
+    }
 
+    private function updateMainImage($producto, $mainImage)
+    {
+        if ($producto->imagen) {
+            $publicId = $producto->imagen_public_id;
+            if ($publicId) {
+                Cloudinary::destroy($publicId);
+            }
+        }
+
+        $uploadedFile = Cloudinary::upload($mainImage->getRealPath(), [
+            'folder' => 'Productos',
+        ]);
+        $imageUrl = $uploadedFile->getSecurePath();
+        $publicId = $uploadedFile->getPublicId();
+
+        $producto->update([
+            'imagen' => $imageUrl,
+            'imagen_public_id' => $publicId
+        ]);
+    }
+
+    private function processExtraImages($producto, $imagenes_extra, $imagenes_extra_ids)
+    {
+        foreach ($imagenes_extra as $index => $image) {
+            $image_id = $imagenes_extra_ids[$index] ?? null;
+            // Si tanto la imagen como el ID son null, lo obviamos
+            if (!$image_id && !$image) {
+                continue;
+            }
+
+            // Eliminar imagen
+            if ($image_id && !$image) {
+                $this->deleteExtraImage($image_id);
+               
+            }
+
+            // Si la imagen es una URL, no hacemos nada
+            if ($image_id && filter_var($image, FILTER_VALIDATE_URL)) {
+                continue;
+            }
+
+            // Reemplazar imagen
+            if ($image_id && $image) {
+                $this->replaceExtraImage($image, $image_id);
+            }
+
+            // Crear nueva imagen
+            if (!$image_id && $image) {
+                $this->createNewExtraImage($producto, $image);
+            }
+        }
+    }
+
+    private function deleteExtraImage($image_id)
+    {
+        $imagenExistente = ProductoImagen::find($image_id);
+        if ($imagenExistente) {
+            $publicId = $imagenExistente->imagen_public_id;
+            if ($publicId) {
+                Cloudinary::destroy($publicId); // Eliminar de Cloudinary
+            }
+            $imagenExistente->delete();
+        }
+    }
+
+    private function replaceExtraImage($image, $image_id)
+    {
+        try {
+            $uploadedFile = Cloudinary::upload($image->getRealPath(), [
+                'folder' => 'Productos_extra',
+            ]);
+            $imageUrl = $uploadedFile->getSecurePath();
+            $publicId = $uploadedFile->getPublicId();
+
+            $imagenExistente = ProductoImagen::find($image_id);
+            if ($imagenExistente) {
+                if ($imagenExistente->imagen_public_id) {
+                    Cloudinary::destroy($imagenExistente->imagen_public_id);
+                }
+                $imagenExistente->update([
+                    'image' => $imageUrl,
+                    'imagen_public_id' => $publicId,
+                ]);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception('Error al reemplazar la imagen: ' . $e->getMessage());
+        }
+    }
+
+    private function createNewExtraImage($producto, $image)
+    {
+        try {
+            $uploadedFile = Cloudinary::upload($image->getRealPath(), [
+                'folder' => 'Productos_extra',
+            ]);
+            $imageUrl = $uploadedFile->getSecurePath();
+            $publicId = $uploadedFile->getPublicId();
+
+            ProductoImagen::create([
+                'producto_id' => $producto->id,
+                'image' => $imageUrl,
+                'imagen_public_id' => $publicId,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw new \Exception('Error al crear la imagen extra: ' . $e->getMessage());
+        }
+    }
+
+    public function get_images_extra(string $id){
+        $imagenesExistentes = ProductoImagen::where('producto_id', $id)->get();
+        return response()->json([
+            'images' => $imagenesExistentes->map(function($i){
+                return [
+                    'id'=>$i->id,
+                    'image'=>$i->image
+                ];
+            })
+        ]);
     }
 }
