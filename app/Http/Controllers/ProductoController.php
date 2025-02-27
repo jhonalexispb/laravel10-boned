@@ -175,10 +175,6 @@ class ProductoController extends Controller
         }
     }
 
-    /* $producto->get_principios_activos()->attach($proveedores);
-
-        $producto->load('proveedores'); */
-
     /**
      * Display the specified resource.
      */
