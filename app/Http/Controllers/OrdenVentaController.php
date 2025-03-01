@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Configuration\Laboratorio;
 use App\Models\OrdenVenta;
 use App\Models\Producto;
 use Illuminate\Http\Request;
@@ -10,7 +11,7 @@ class OrdenVentaController extends Controller
 {
     public function getRecursosParaCrear()
     {   
-        $userId = auth()->id();
+        /* $userId = auth()->id();
         $codigo = OrdenVenta::generarCodigo($userId);
         if (!$codigo) {
             return response()->json(['error' => 'Código no generado'], 422);
@@ -57,6 +58,27 @@ class OrdenVentaController extends Controller
                     "name" => $p->name,
                 ];
             }),
+        ]); */
+    }
+
+    public function getRecursosIniciales(){
+        $userId = auth()->id();
+        $codigo = OrdenVenta::generarCodigo($userId);
+        if (!$codigo) {
+            return response()->json(['error' => 'Código no generado'], 422);
+        }
+
+        $laboratorio = Laboratorio::where('state',1)->get();
+
+        return response()->json([
+            'codigo' => $codigo,
+            'laboratorios' => $laboratorio->map(function($l){
+                return [
+                    'id'=>$l->id,
+                    'name' => $l->name,
+                    'color' => $l->color,
+                ];
+            })
         ]);
     }
  //necasitamoas envai8r la mercaderia que no este vencida, y que no este para devolucion, si no tiene devolucion se tiene que avisar, habra una seccion en donde se filtre los productos que esten a 6 y 3 meses de vencery tiene que ser configurable 
