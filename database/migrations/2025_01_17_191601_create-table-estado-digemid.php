@@ -19,7 +19,7 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        DB::table('comp_ov_estdig_relation')->insert([
+        DB::table('estados_digemid')->insert([
             [
                 'nombre' => 'ACTIVO',
                 'created_at' => now(),
