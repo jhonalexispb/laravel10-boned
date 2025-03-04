@@ -63,35 +63,48 @@ class OrdenVentaController extends Controller
 
     public function getRecursosIniciales(){
         $userId = auth()->id();
-        $codigo = OrdenVenta::generarCodigo($userId);
-        if (!$codigo) {
-            return response()->json(['error' => 'Código no generado'], 422);
-        }
 
-        $laboratorio = Laboratorio::where('state',1)->get();
+        $search_codigo = OrdenVenta::where('usuario_id',$userId)
+                        ->where('state_orden',0)
+                        ->first();
+        if($search_codigo){
+            $carrito_venta_id = $search_codigo->id;
+            $codigo = $search_codigo->codigo;
+        }else{
+            $codigo = OrdenVenta::generarCodigo($userId);
+            if (!$codigo) {
+                return response() -> json([
+                    "message" => 403,
+                    "message_text" => 'Codigo no generado'
+                ],422);
+            }
+
+            $carritoVenta  = OrdenVenta::create([
+                'usuario_id' => $userId,
+                'codigo' => $codigo,
+            ]);
+
+            if (!$carritoVenta) {
+                return response() -> json([
+                    "message" => 403,
+                    "message_text" => 'Carrito de venta no creado'
+                ],422);
+            }
+
+            $carrito_venta_id = $carritoVenta->id;
+        }
 
         return response()->json([
             'codigo' => $codigo,
-            'laboratorios' => $laboratorio->map(function($l){
-                return [
-                    'id'=>$l->id,
-                    'name' => $l->name,
-                    'color' => $l->color,
-                ];
-            })
+            'carrito_venta_id' => $carrito_venta_id
         ]);
     }
- //necasitamoas envai8r la mercaderia que no este vencida, y que no este para devolucion, si no tiene devolucion se tiene que avisar, habra una seccion en donde se filtre los productos que esten a 6 y 3 meses de vencery tiene que ser configurable 
-    public function getProductosByLaboratorio(Request $request){
-        $request->validate([
-            'laboratorio_id' => 'required|array',
-            'laboratorio_id.*' => 'exists:laboratorio,id',
-        ]);
+    //necasitamoas envai8r la mercaderia que no este vencida, y que no este para devolucion, si no tiene devolucion se tiene que avisar, habra una seccion en donde se filtre los productos que esten a 6 y 3 meses de vencery tiene que ser configurable 
+    public function getProductos(){
 
         return response()->json([
-            "productos" => Producto::whereIn('laboratorio_id', $request->laboratorio_id)
-                                    ->where('state', 1) // Solo productos activos
-                                    ->where('stock', '>', 0) // Solo productos con stock mayor a 0
+            "productos" => Producto::where('state', 1)
+                                    /* ->where('stock', '>', 0) */
                                     ->with([
                                         'get_escalas' => function ($query) {
                                             $query->where('state', 1); // Solo escalas activas
@@ -105,6 +118,7 @@ class OrdenVentaController extends Controller
                                         'get_presentacion',
                                         'get_principios_activos'
                                     ])
+                                    ->orderBy('sku','asc')
                                     ->get()
                                     ->map(function ($p) {
                 return [

@@ -28,18 +28,15 @@ return new class extends Migration
             $table->unsignedBigInteger('transporte_id')->nullable();
             $table->foreign('transporte_id')->references('id')->on('transportes_orden_venta')->onDelete('restrict');
 
-            $table->tinyInteger('state_orden')->default(0)->comment('0: Pendiente, 1: Enviado, 2: Facturado');
+            $table->tinyInteger('state_orden')->default(0)->comment('0: Cotizacion, 1: Pendiente, 2: Enviado, 3:Facturado');
             $table->dateTime("fecha_envio")->nullable();
             $table->dateTime("fecha_facturacion")->nullable();
 
-            $table->tinyInteger('state_fisico')->default(0)->comment('0: En almacen, 1: Empaquetado, 3:En ruta ,4: En agencia, 5: Entregado al cliente, 6: cancelado, 7 devuelto');
+            $table->tinyInteger('state_fisico')->default(0)->comment('0:Cotizacion, 1: En almacen, 2: Empaquetado, 3:En ruta ,4: En agencia, 5: Entregado al cliente, 6: cancelado, 7 devuelto');
             $table->dateTime("fecha_empaquetado")->nullable();
             $table->dateTime("fecha_cargado")->nullable();
             $table->dateTime("fecha_agencia")->nullable();
             $table->dateTime("fecha_entregado_cliente")->nullable(); 
-
-            $table->boolean('doc_pend_agencia')->nullable()->comment('0: En agencia, 1: Regularizado');
-            $table->dateTime("fecha_documentacion_entregada")->nullable(); //cuando sea provincia y el transporte devuelva las guias firmadas
 
             $table->tinyInteger('state_seguimiento')->default(0)->comment('0: No revisado, 1: Chequeado');
             $table->dateTime("fecha_corroboracion")->nullable();
