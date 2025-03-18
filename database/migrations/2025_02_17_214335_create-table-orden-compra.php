@@ -13,8 +13,6 @@ return new class extends Migration
             $table->string('codigo')->unique();
             $table->unsignedBigInteger('proveedor_id');
             $table->foreign('proveedor_id')->references('id')->on('proveedor')->onDelete('restrict');
-            $table->unsignedBigInteger('laboratorio_id');
-            $table->foreign('laboratorio_id')->references('id')->on('laboratorio')->onDelete('restrict');
             $table->unsignedBigInteger('type_comprobante_compra_id');
             $table->foreign('type_comprobante_compra_id')->references('id')->on('type_comprobante_pago_compra')->onDelete('restrict');
             $table->unsignedBigInteger('forma_pago_id');
@@ -23,6 +21,8 @@ return new class extends Migration
             $table->dateTime('date_recepcion')->nullable()->comment('fecha que indica el dia en el que se recibio la mercaderia');
             $table->dateTime('date_revision')->nullable()->comment('fecha que indica el dia en el que se ingreso la mercaderia al stock');
             $table->longText('descripcion')->nullable();
+            $table->boolean('notificacion')->comment('¿Notificar a los vendedores?');
+            $table->longText('mensaje_notificacion')->nullable();
             $table->decimal('importe',8,2)->default(0);
             $table->decimal('igv',8,2)->default(0);
             $table->decimal('total',8,2)->default(0);
