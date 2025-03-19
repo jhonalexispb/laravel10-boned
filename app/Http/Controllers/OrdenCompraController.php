@@ -66,6 +66,51 @@ class OrdenCompraController extends Controller
         ]);
     }
 
+    public function getRecursosParaEditar()
+    {   
+        return response()->json([
+            "proveedores" => Proveedor::where('state', 1)
+            ->with([
+                'proveedorLaboratorios.laboratorios:id,name,color',
+            ])
+            ->get()
+            ->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "razonSocial" => $p->razonSocial,
+                    "name" => $p->name,
+                    "email" => $p->email,
+                    "representante" => $p->idrepresentante ? $p->representante->name : 'Sin representante',
+                    "representante_celular" => $p->idrepresentante ? $p->representante->celular : '',
+                    "laboratorios" => $p->proveedorLaboratorios->map(function ($pl) {
+                        return [
+                            "id" => $pl->id,
+                            "laboratorio_id" => $pl->laboratorios->id,
+                            "color" => $pl->laboratorios->color,
+                            "name" => $pl->laboratorios->name,
+                            "name_margen" => $pl->laboratorios->name." (".$pl->margen_minimo."%)",
+                            "margen_minimo" => $pl->margen_minimo,
+                        ];
+                    }),
+                ];
+            }),
+
+            "forma_pago" => FormaPagoOrdenesCompra::where('state', 1)->get()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                ];
+            }),
+
+            "tipo_comprobante" => TipoComprobantePagoCompra::where('state', 1)->get()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                ];
+            }),
+        ]);
+    }
+
     public function getProductosByLaboratorio(Request $request){
         $request->validate([
             'laboratorio_id' => 'required|array',
@@ -162,8 +207,7 @@ class OrdenCompraController extends Controller
         ]);
     }
     
-    public function getCuotasPendientes()
-    {
+    public function getCuotasPendientes(){
         $cuotas = OrdenCompraCuotas::where('state',0)->get();
 
         return response()->json([
@@ -172,7 +216,7 @@ class OrdenCompraController extends Controller
                     "title" => $d->title,
                     "start" => Carbon::parse($d->start)->format("Y-m-d"),
                     "startStr" => Carbon::parse($d->start)->format("Y-m-d"),
-                    "className" => 'border-warning bg-warning text-white',
+                    "className" => 'border-danger bg-danger text-black',
                     "extendedProps" => [
                         "amount" => $d->amount,
                         "notes" => $d->notes,
@@ -226,8 +270,48 @@ class OrdenCompraController extends Controller
         ]);
     }
 
-    public function store(Request $request)
-    {
+    public function show($id){
+        $ordenCompra = OrdenCompra::findOrFail($id);
+        $ordenCompra_detail = OrdenCompraDetails::where('orden_compra_id',$id)->get();
+        return response()->json([
+            'order_compra' => [
+                "id" => $ordenCompra->id,
+                "codigo" => $ordenCompra->codigo,
+                "descripcion" => $ordenCompra->descripcion,
+                "fecha_ingreso" => $ordenCompra->fecha_ingreso,
+                "forma_pago_id" => $ordenCompra->forma_pago_id,
+                "igv" => $ordenCompra->igv_state,
+                "impuesto" => $ordenCompra->igv,
+                "mensaje_notificacion" => $ordenCompra->mensaje_notificacion,
+                "notificacion" => $ordenCompra->notificacion,
+                "proveedor" => $ordenCompra->proveedor_id,
+                "proveedor_name" => $ordenCompra->getProveedor->name,
+                "sub_total" => $ordenCompra->importe,
+                "total" => $ordenCompra->total,
+                "type_comprobante_compra_id" => $ordenCompra->type_comprobante_compra_id,
+            ],
+            'order_compra_detail' => $ordenCompra_detail->map(function($d){
+                return [
+                    "cantidad" => $d->cantidad,
+                    "caracteristicas" => $d->getProducto->caracteristicas ?? '',
+                    "color_laboratorio" => $d->getProducto->get_laboratorio->color,
+                    "condicion_vencimiento" => $d->condicion_vencimiento,
+                    "fecha_vencimiento" => $d->fecha_vencimiento,
+                    "ganancia" => number_format($d->cantidad * ($d->p_venta - $d->p_compra), 2, '.', ''),
+                    "laboratorio" => $d->getProducto->get_laboratorio->name,
+                    "margen_minimo" => $d->margen_ganancia,
+                    "nombre" => $d->getProducto->nombre ?? 'Sin nombre',
+                    "pcompra" => $d->p_compra,
+                    "producto_id" => $d->producto_id,
+                    "pventa" => $d->p_venta,
+                    "sku" => $d->getProducto->sku,
+                    "total" => $d->total,
+                ];
+            })
+        ]);
+    }
+
+    public function store(Request $request){
         $validatedData = $request->validate([
             'compra_form.proveedor_id' => 'required|integer|exists:proveedor,id',
             'compra_form.type_comprobante_compra_id' => 'required|integer|exists:type_comprobante_pago_compra,id',

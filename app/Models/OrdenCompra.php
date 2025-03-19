@@ -6,6 +6,7 @@ use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
 use App\Models\OrdenCompraAtributtes\OrdenCompraCuotas;
+use App\Models\OrdenCompraAtributtes\OrdenCompraDetails;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -99,5 +100,10 @@ class OrdenCompra extends Model
 
     public function getCuotas(){
         return $this->hasMany(OrdenCompraCuotas::class, "orden_compra_id");
+    }
+
+    public function detalles()
+    {
+        return $this->hasMany(OrdenCompraDetails::class, 'orden_compra_id');
     }
 }
