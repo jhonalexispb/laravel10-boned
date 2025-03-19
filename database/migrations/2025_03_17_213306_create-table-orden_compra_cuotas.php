@@ -12,10 +12,11 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('orden_compra_id');
             $table->foreign('orden_compra_id')->references('id')->on('ordenes_compra')->onDelete('restrict');
+            $table->string('title');
             $table->decimal('amount',10,2);
             $table->boolean('state')->default(0)->comment('0 es pendiente, 1 es cancelado');
-            $table->dateTime('start');
-            $table->dateTime('reminder');
+            $table->date('start');
+            $table->date('reminder');
             $table->longText('notes')->nullable();
             $table->string('numero_unico')->nullable();
             $table->dateTime('fecha_cancelado')->nullable();

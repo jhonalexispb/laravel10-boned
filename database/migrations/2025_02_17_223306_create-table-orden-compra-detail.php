@@ -26,6 +26,8 @@ return new class extends Migration
             $table->decimal('total',8,2);
             $table->decimal('margen_ganancia',8,2);
             $table->decimal('p_venta',8,2);
+            $table->boolean('condicion_vencimiento')->comment('0 es mayor o igual y 1 es igual a');
+            $table->date('fecha_vencimiento');
             $table->tinyInteger('state')->default(0)->comment('0 es solicitado, 1 es ingresado, 2 es rechazado');
             $table->timestamps();
             $table->softDeletes();

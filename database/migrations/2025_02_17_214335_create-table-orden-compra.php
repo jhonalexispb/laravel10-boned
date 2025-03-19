@@ -26,6 +26,7 @@ return new class extends Migration
             $table->decimal('importe',8,2)->default(0);
             $table->decimal('igv',8,2)->default(0);
             $table->decimal('total',8,2)->default(0);
+            $table->date('fecha_ingreso')->nullable();
             $table->tinyInteger('state')->default(0)->comment('0 es solicitado, 1 es recepcionado, 2 es revisado, 3 parcial, 4 ingresado');
             $table->timestamps();
             $table->softDeletes();

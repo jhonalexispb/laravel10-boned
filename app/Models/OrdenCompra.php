@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
+use App\Models\OrdenCompraAtributtes\OrdenCompraCuotas;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,16 +22,18 @@ class OrdenCompra extends Model
     protected $fillable = [
         "codigo",
         "proveedor_id",
-        "laboratorio_id",
         "type_comprobante_compra_id",
         "forma_pago_id",
         "igv_state",
         "date_recepcion",
         "date_revision",
         "descripcion",
+        "notificacion",
+        "mensaje_notificacion",
         "importe",
         "igv",
         "total",
+        "fecha_ingreso",
         "state",
     ];
 
@@ -58,20 +61,24 @@ class OrdenCompra extends Model
         $año = date('Y'); // Año actual
         $prefijo = "OC-$año-";
 
-        // Buscar la última orden con el mismo año
-        $ultimaOrden = self::where('codigo', 'LIKE', "$prefijo%")
-                           ->orderBy('codigo', 'desc')
-                           ->first();
+        // Buscar todas las órdenes con el prefijo actual
+        $ultimosCodigos = self::where('codigo', 'LIKE', "$prefijo%")->pluck('codigo');
 
-        // Si hay una orden previa, extraemos el número y sumamos 1
-        if ($ultimaOrden) {
-            $ultimoNumero = intval(substr($ultimaOrden->codigo, strlen($prefijo))) + 1;
-        } else {
-            $ultimoNumero = 1;
+        $maxNumero = 0; // Inicializar el número máximo
+
+        // Recorrer los códigos y extraer el número más alto
+        foreach ($ultimosCodigos as $codigo) {
+            $numero = intval(str_replace($prefijo, '', $codigo)); // Extrae el número
+            if ($numero > $maxNumero) {
+                $maxNumero = $numero;
+            }
         }
 
+        // Sumar 1 al número más alto encontrado
+        $nuevoNumero = $maxNumero + 1;
+
         // Retornar el nuevo código
-        return $prefijo . $ultimoNumero;
+        return $prefijo . $nuevoNumero;
     }
 
     public function getProveedor(){
@@ -82,11 +89,15 @@ class OrdenCompra extends Model
         return $this->belongsTo(Laboratorio::class, "laboratorio_id");
     }
 
-    public function getTypeComporbante(){
+    public function getTypeComprobante(){
         return $this->belongsTo(TipoComprobantePagoCompra::class, "type_comprobante_compra_id");
     }
 
     public function getFormaPago(){
         return $this->belongsTo(FormaPagoOrdenesCompra::class, "forma_pago_id");
+    }
+
+    public function getCuotas(){
+        return $this->hasMany(OrdenCompraCuotas::class, "orden_compra_id");
     }
 }

@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\configuration\bankController;
 use App\Http\Controllers\Configuration\LineaFarmaceuticaController;
 use Illuminate\Support\Facades\Route;
 

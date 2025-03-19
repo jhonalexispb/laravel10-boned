@@ -3,8 +3,6 @@
 namespace App\Models\OrdenCompraAtributtes;
 
 use App\Models\OrdenCompra;
-use App\Models\Producto;
-use App\Models\ProductoAtributtes\Unidad;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,24 +10,23 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
-class OrdenCompraDetails extends Model
+class OrdenCompraCuotas extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
-    protected $table = "ordenes_compra_detail";
+    protected $table = "ordenes_compra_cuotas";
     protected $fillable = [
         "orden_compra_id",
-        "n_comprobante_id",
-        "producto_id",
-        "unit_id",
-        "cantidad",
-        "p_compra",
-        "total",
-        "margen_ganancia",
-        "p_venta",
-        "condicion_vencimiento",
-        "fecha_vencimiento",
+        "title",
+        "amount",
         "state",
+        "start",
+        "reminder",
+        "notes",
+        "numero_unico",
+        "fecha_cancelado",
+        "notificado",
+        "intentos_envio", //numero de veces que envio la notificacion
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -38,7 +35,7 @@ class OrdenCompraDetails extends Model
         return LogOptions::defaults()
             ->logAll()  // Si deseas registrar todos los cambios
             ->logOnlyDirty()  // Opción de solo registrar cambios realizados (no todos los atributos)
-            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Condicion almacenamiento");
+            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Orden cuota cuotas");
     }
 
     public function setCreatedAtAttribute($value){
@@ -53,17 +50,5 @@ class OrdenCompraDetails extends Model
 
     public function getOrdenCompra(){
         return $this->belongsTo(OrdenCompra::class, "orden_compra_id");
-    }
-
-    public function getNDocumento(){
-        return $this->belongsTo(NDocumentoOrdenCompra::class, "n_comprobante_id");
-    }
-
-    public function getProducto(){
-        return $this->belongsTo(Producto::class, "producto_id");
-    }
-
-    public function getUnit(){
-        return $this->belongsTo(Unidad::class, "unit_id");
     }
 }
