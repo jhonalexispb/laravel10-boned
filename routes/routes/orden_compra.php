@@ -14,6 +14,7 @@ Route::group([
     Route::get('/orden_compra/recursos_editar', [OrdenCompraController::class, 'getRecursosParaEditar']);
     Route::get('/orden_compra/recursos_crear/productos/{id}', [OrdenCompraController::class, 'getProductDetail']);
     Route::get('/orden_compra/cuotas_pendientes', [OrdenCompraController::class,'getCuotasPendientes']);
+    Route::get('/orden_compra/recursos_editar/cuotas/{id}', [OrdenCompraController::class, 'getCuotasPendientesEditarOrdenCompra']);
     Route::post('/orden_compra/recursos_crear/productos', [OrdenCompraController::class, 'getProductosByLaboratorio']);
     Route::resource("orden_compra",OrdenCompraController::class)->except(['create','edit']);
 });

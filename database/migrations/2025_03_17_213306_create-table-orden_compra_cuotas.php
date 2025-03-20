@@ -14,9 +14,11 @@ return new class extends Migration
             $table->foreign('orden_compra_id')->references('id')->on('ordenes_compra')->onDelete('restrict');
             $table->string('title');
             $table->decimal('amount',10,2);
+            $table->decimal('saldo',10,2);
             $table->boolean('state')->default(0)->comment('0 es pendiente, 1 es cancelado');
             $table->date('start');
             $table->date('reminder');
+            $table->smallInteger('dias_reminder');
             $table->longText('notes')->nullable();
             $table->string('numero_unico')->nullable();
             $table->dateTime('fecha_cancelado')->nullable();

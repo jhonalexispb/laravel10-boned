@@ -19,6 +19,8 @@ class OrdenCompraCuotas extends Model
         "orden_compra_id",
         "title",
         "amount",
+        "saldo",
+        "dias_reminder",
         "state",
         "start",
         "reminder",

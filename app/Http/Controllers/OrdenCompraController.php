@@ -219,8 +219,10 @@ class OrdenCompraController extends Controller
                     "className" => 'border-danger bg-danger text-black',
                     "extendedProps" => [
                         "amount" => $d->amount,
+                        "saldo" => $d->saldo,
                         "notes" => $d->notes,
                         "reminder" => $d->reminder,
+                        "dias_reminder" => $d->dias_reminder,
                     ],
                     "state" => $d->state,
                     "numero_unico" => $d->numero_unico,
@@ -311,6 +313,53 @@ class OrdenCompraController extends Controller
         ]);
     }
 
+    public function getCuotasPendientesEditarOrdenCompra($id){
+        $cuotas = OrdenCompraCuotas::where('state',0)
+                                    ->where('orden_compra_id','<>',$id)
+                                    ->get();
+        $ordenCompraCuotas = OrdenCompraCuotas::where('orden_compra_id',$id)->get();
+
+        return response()->json([
+            "cuotas_pendientes" => $cuotas->map(function($d){
+                return [
+                    "title" => $d->title,
+                    "start" => Carbon::parse($d->start)->format("Y-m-d"),
+                    "startStr" => Carbon::parse($d->start)->format("Y-m-d"),
+                    "className" => 'border-danger bg-danger text-black',
+                    "extendedProps" => [
+                        "amount" => $d->amount,
+                        "saldo" => $d->saldo,
+                        "notes" => $d->notes,
+                        "reminder" => $d->reminder,
+                        "dias_reminder" => $d->dias_reminder,
+                    ],
+                    "state" => $d->state,
+                    "numero_unico" => $d->numero_unico,
+                    "fecha_cancelado" => $d->fecha_cancelado,
+                ];
+            }),
+            "cuotas_orden_compra" => $ordenCompraCuotas->map(function($d){
+                return [
+                    "id" => $d->id,
+                    "title" => $d->title,
+                    "start" => Carbon::parse($d->start)->format("Y-m-d"),
+                    "startStr" => Carbon::parse($d->start)->format("Y-m-d"),
+                    "className" => 'border-primary bg-primary text-black',
+                    "extendedProps" => [
+                        "amount" => $d->amount,
+                        "saldo" => $d->saldo,
+                        "notes" => $d->notes,
+                        "reminder" => $d->reminder,
+                        "dias_reminder" => $d->dias_reminder,
+                    ],
+                    "state" => $d->state,
+                    "numero_unico" => $d->numero_unico,
+                    "fecha_cancelado" => $d->fecha_cancelado,
+                ];
+            })
+        ]);
+    }
+
     public function store(Request $request){
         $validatedData = $request->validate([
             'compra_form.proveedor_id' => 'required|integer|exists:proveedor,id',
@@ -341,6 +390,7 @@ class OrdenCompraController extends Controller
             'eventos_compra_cuotas.*.amount' => 'required|numeric|min:0',
             'eventos_compra_cuotas.*.notes' => 'nullable|string',
             'eventos_compra_cuotas.*.reminder' => 'required|date',
+            'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1',
         ]);
 
         try {
@@ -385,8 +435,10 @@ class OrdenCompraController extends Controller
                     'orden_compra_id' => $ordenCompra->id,
                     'title' => $cuota['title'],
                     'amount' => $cuota['amount'],
+                    'saldo' => $cuota['amount'],
                     'start' => $cuota['start'],
                     'reminder' => $cuota['reminder'],
+                    'dias_reminder' => $cuota['dias_reminder'],
                     'notes' => $cuota['notes'] ?? null,
                 ]);
             }
