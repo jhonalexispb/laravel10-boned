@@ -12,6 +12,7 @@ use App\Models\Producto;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrdenCompraController extends Controller
 {
@@ -232,6 +233,78 @@ class OrdenCompraController extends Controller
         ]);
     }
 
+    public function getCuotasPendientesEditarOrdenCompra($id){
+        $cuotas = OrdenCompraCuotas::where('state',0)
+                                    ->where('orden_compra_id','<>',$id)
+                                    ->get();
+        $ordenCompraCuotas = OrdenCompraCuotas::where('orden_compra_id',$id)->get();
+
+        return response()->json([
+            "cuotas_pendientes" => $cuotas->map(function($d){
+                return [
+                    "title" => $d->title,
+                    "start" => Carbon::parse($d->start)->format("Y-m-d"),
+                    "startStr" => Carbon::parse($d->start)->format("Y-m-d"),
+                    "className" => 'border-danger bg-danger text-black',
+                    "extendedProps" => [
+                        "amount" => $d->amount,
+                        "saldo" => $d->saldo,
+                        "notes" => $d->notes,
+                        "reminder" => $d->reminder,
+                        "dias_reminder" => $d->dias_reminder,
+                    ],
+                    "state" => $d->state,
+                    "numero_unico" => $d->numero_unico,
+                    "fecha_cancelado" => $d->fecha_cancelado,
+                ];
+            }),
+            "cuotas_orden_compra" => $ordenCompraCuotas->map(function($d){
+                return [
+                    "id" => $d->id,
+                    "title" => $d->title,
+                    "start" => Carbon::parse($d->start)->format("Y-m-d"),
+                    "startStr" => Carbon::parse($d->start)->format("Y-m-d"),
+                    "className" => 'border-primary bg-primary text-black',
+                    "extendedProps" => [
+                        "amount" => $d->amount,
+                        "saldo" => $d->saldo,
+                        "notes" => $d->notes,
+                        "reminder" => $d->reminder,
+                        "dias_reminder" => $d->dias_reminder,
+                    ],
+                    "state" => $d->state,
+                    "numero_unico" => $d->numero_unico,
+                    "fecha_cancelado" => $d->fecha_cancelado,
+                ];
+            })
+        ]);
+    }
+
+    public function getProductosOrdenCompra($id){
+        $ordenCompra_detail = OrdenCompraDetails::where('orden_compra_id',$id)->get();
+        return response()->json([
+            'order_compra_detail' => $ordenCompra_detail->map(function($d){
+                return [
+                    "cantidad" => $d->cantidad,
+                    "caracteristicas" => $d->getProducto->caracteristicas ?? '',
+                    "color_laboratorio" => $d->getProducto->get_laboratorio->color,
+                    "condicion_vencimiento" => $d->condicion_vencimiento,
+                    "fecha_vencimiento" => $d->fecha_vencimiento,
+                    "ganancia" => number_format($d->cantidad * ($d->p_venta - $d->p_compra), 2, '.', ''),
+                    "laboratorio" => $d->getProducto->get_laboratorio->name,
+                    "margen_minimo" => $d->margen_ganancia,
+                    "nombre" => $d->getProducto->nombre ?? 'Sin nombre',
+                    "pcompra" => $d->p_compra,
+                    "producto_id" => $d->producto_id,
+                    "pventa" => $d->p_venta,
+                    "sku" => $d->getProducto->sku,
+                    "imagen" => $d->getProducto->imagen ?? env("IMAGE_DEFAULT"),
+                    "total" => $d->total,
+                ];
+            })
+        ]);
+    }
+
     public function index(Request $request)  {
         $search = $request->get('search');
         $order_compra_list = OrdenCompra::with(['getProveedor:id,name', 'getTypeComprobante:id,name', 'getFormaPago:id,name','getCuotas'])
@@ -308,53 +381,6 @@ class OrdenCompraController extends Controller
                     "pventa" => $d->p_venta,
                     "sku" => $d->getProducto->sku,
                     "total" => $d->total,
-                ];
-            })
-        ]);
-    }
-
-    public function getCuotasPendientesEditarOrdenCompra($id){
-        $cuotas = OrdenCompraCuotas::where('state',0)
-                                    ->where('orden_compra_id','<>',$id)
-                                    ->get();
-        $ordenCompraCuotas = OrdenCompraCuotas::where('orden_compra_id',$id)->get();
-
-        return response()->json([
-            "cuotas_pendientes" => $cuotas->map(function($d){
-                return [
-                    "title" => $d->title,
-                    "start" => Carbon::parse($d->start)->format("Y-m-d"),
-                    "startStr" => Carbon::parse($d->start)->format("Y-m-d"),
-                    "className" => 'border-danger bg-danger text-black',
-                    "extendedProps" => [
-                        "amount" => $d->amount,
-                        "saldo" => $d->saldo,
-                        "notes" => $d->notes,
-                        "reminder" => $d->reminder,
-                        "dias_reminder" => $d->dias_reminder,
-                    ],
-                    "state" => $d->state,
-                    "numero_unico" => $d->numero_unico,
-                    "fecha_cancelado" => $d->fecha_cancelado,
-                ];
-            }),
-            "cuotas_orden_compra" => $ordenCompraCuotas->map(function($d){
-                return [
-                    "id" => $d->id,
-                    "title" => $d->title,
-                    "start" => Carbon::parse($d->start)->format("Y-m-d"),
-                    "startStr" => Carbon::parse($d->start)->format("Y-m-d"),
-                    "className" => 'border-primary bg-primary text-black',
-                    "extendedProps" => [
-                        "amount" => $d->amount,
-                        "saldo" => $d->saldo,
-                        "notes" => $d->notes,
-                        "reminder" => $d->reminder,
-                        "dias_reminder" => $d->dias_reminder,
-                    ],
-                    "state" => $d->state,
-                    "numero_unico" => $d->numero_unico,
-                    "fecha_cancelado" => $d->fecha_cancelado,
                 ];
             })
         ]);
@@ -491,16 +517,17 @@ class OrdenCompraController extends Controller
             'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1',
         ]);
 
+        $orden_compra = OrdenCompra::findOrFail($validatedData['compra_form']['compra_id']);
+
+        if($orden_compra->state == 4){
+            return response()->json([
+                "message" => 403,
+                'message_text' => 'la orden de compra ya se encuentra ingresada al stock, no es posible editarla'
+            ], 422);
+        }
+
         try {
             DB::beginTransaction();
-            $orden_compra = OrdenCompra::findOrFail($validatedData['compra_form']['compra_id']);
-
-            if($orden_compra->state == 4){
-                return response()->json([
-                    "message" => 403,
-                    'message_text' => 'la orden de compra ya se encuentra ingresada al stock, no es posible editarla'
-                ], 422);
-            }
             // Crear la orden de compra
             $orden_compra->update([
                 "proveedor_id" => $validatedData['compra_form']['proveedor_id'],
@@ -568,4 +595,35 @@ class OrdenCompraController extends Controller
             ], 500);
         }
     } 
+
+    public function destroy($id)
+    {
+        $orden_compra = OrdenCompra::findOrFail($id);
+
+        if ($orden_compra->state != 0) {
+            return response()->json([
+                "message" => 403,
+                'message_text' => "no puedes eliminar la orden porque la mercadería ya fue recepcionada"
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $orden_compra->delete();
+            DB::commit();
+            return response()->json(["message" => "la orden de compra se eliminó correctamente."], 200);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            // 🔹 Registramos el error en los logs para análisis
+            Log::error("Error al eliminar orden de compra: " . $e->getMessage());
+
+            // 🔹 Mensaje genérico al usuario para seguridad
+            return response()->json([
+                "error" => "Ocurrió un problema al eliminar la orden. Por favor, intenta más tarde."
+            ], 500);
+        }
+    }
 }
