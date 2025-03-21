@@ -456,4 +456,116 @@ class OrdenCompraController extends Controller
             ], 500);
         }
     } 
+
+    public function update(Request $request){
+        $validatedData = $request->validate([
+            'compra_form.compra_id' => 'required|integer|exists:ordenes_compra,id',
+            'compra_form.proveedor_id' => 'required|integer|exists:proveedor,id',
+            'compra_form.type_comprobante_compra_id' => 'required|integer|exists:type_comprobante_pago_compra,id',
+            'compra_form.forma_pago_id' => 'required|integer|exists:forma_pago_ordenes_compra,id',
+            'compra_form.igv' => 'required|boolean',
+            'compra_form.total' => 'required|numeric',
+            'compra_form.impuesto' => 'required|numeric',
+            'compra_form.sub_total' => 'required|numeric',
+            'compra_form.notificacion' => 'required|boolean',
+            'compra_form.mensaje_notificacion' => 'nullable',
+            'compra_form.fecha_ingreso' => 'nullable|date',
+            'compra_form.descripcion' => 'nullable',
+
+            'compra_details' => 'required|array',
+            'compra_details.*.producto_id' => 'required|integer|exists:productos,id',
+            'compra_details.*.cantidad' => 'required|integer|min:1',
+            'compra_details.*.condicion_vencimiento' => 'required|boolean',
+            'compra_details.*.fecha_vencimiento' => 'required|date',
+            'compra_details.*.margen_ganancia' => 'required|numeric|min:0',
+            'compra_details.*.pcompra' => 'required|numeric|min:0',
+            'compra_details.*.pventa' => 'required|numeric|min:0',
+            'compra_details.*.total' => 'required|numeric|min:0',
+
+            'eventos_compra_cuotas' => 'required|array',
+            'eventos_compra_cuotas.*.title' => 'required',
+            'eventos_compra_cuotas.*.start' => 'required|date',
+            'eventos_compra_cuotas.*.amount' => 'required|numeric|min:0',
+            'eventos_compra_cuotas.*.notes' => 'nullable|string',
+            'eventos_compra_cuotas.*.reminder' => 'required|date',
+            'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            $orden_compra = OrdenCompra::findOrFail($validatedData['compra_form']['compra_id']);
+
+            if($orden_compra->state == 4){
+                return response()->json([
+                    "message" => 403,
+                    'message_text' => 'la orden de compra ya se encuentra ingresada al stock, no es posible editarla'
+                ], 422);
+            }
+            // Crear la orden de compra
+            $orden_compra->update([
+                "proveedor_id" => $validatedData['compra_form']['proveedor_id'],
+                "type_comprobante_compra_id" => $validatedData['compra_form']['type_comprobante_compra_id'],
+                "forma_pago_id" => $validatedData['compra_form']['forma_pago_id'],
+                "igv_state" => $validatedData['compra_form']['igv'],
+                "descripcion" => $validatedData['compra_form']['descripcion'],
+                "notificacion" => $validatedData['compra_form']['notificacion'],
+                "mensaje_notificacion" => $validatedData['compra_form']['mensaje_notificacion'],
+                "importe" => $validatedData['compra_form']['sub_total'],
+                "igv" => $validatedData['compra_form']['impuesto'],
+                "total" => $validatedData['compra_form']['total'],
+                "fecha_ingreso" => $validatedData['compra_form']['fecha_ingreso'],
+            ]);
+
+            $detalles_actuales = $orden_compra->detalles()->pluck('id', 'producto_id');
+
+            foreach ($validatedData['compra_details'] as $detalle) {
+                OrdenCompraDetails::updateOrCreate(
+                    ['orden_compra_id' => $orden_compra->id, 'producto_id' => $detalle['producto_id']],
+                    [
+                        'unit_id' => 1, // Unidad por defecto
+                        'cantidad' => $detalle['cantidad'],
+                        'p_compra' => $detalle['pcompra'],
+                        'total' => $detalle['total'],
+                        'margen_ganancia' => $detalle['margen_ganancia'],
+                        'p_venta' => $detalle['pventa'],
+                        'condicion_vencimiento' => $detalle['condicion_vencimiento'],
+                        'fecha_vencimiento' => $detalle['fecha_vencimiento'],
+                    ]
+                );
+    
+                // Eliminar del array de detalles actuales para identificar los eliminados
+                unset($detalles_actuales[$detalle['producto_id']]);
+            }
+    
+            // Eliminar detalles que no están en la nueva actualización
+            OrdenCompraDetails::whereIn('id', $detalles_actuales)->delete();
+
+            OrdenCompraCuotas::where('orden_compra_id', $orden_compra->id)->delete();
+            
+            foreach ($validatedData['eventos_compra_cuotas'] as $cuota) {
+                OrdenCompraCuotas::create([
+                    'orden_compra_id' => $orden_compra->id,
+                    'title' => $cuota['title'],
+                    'amount' => $cuota['amount'],
+                    'saldo' => $cuota['amount'],
+                    'start' => $cuota['start'],
+                    'reminder' => $cuota['reminder'],
+                    'dias_reminder' => $cuota['dias_reminder'],
+                    'notes' => $cuota['notes'] ?? null,
+                ]);
+            }
+    
+            DB::commit();
+    
+            return response()->json([
+                'message' => 200,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 409,
+                'message_text' => 'Hubo un error al editar la orden de compra'. $e->getMessage(),
+            ], 500);
+        }
+    } 
 }
