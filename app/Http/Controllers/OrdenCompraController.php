@@ -410,13 +410,13 @@ class OrdenCompraController extends Controller
             'compra_details.*.pventa' => 'required|numeric|min:0',
             'compra_details.*.total' => 'required|numeric|min:0',
 
-            'eventos_compra_cuotas' => 'required|array',
+            /* 'eventos_compra_cuotas' => 'required|array',
             'eventos_compra_cuotas.*.title' => 'required',
             'eventos_compra_cuotas.*.start' => 'required|date',
             'eventos_compra_cuotas.*.amount' => 'required|numeric|min:0',
             'eventos_compra_cuotas.*.notes' => 'nullable|string',
             'eventos_compra_cuotas.*.reminder' => 'required|date',
-            'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1',
+            'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1', */
         ]);
 
         try {
@@ -456,7 +456,7 @@ class OrdenCompraController extends Controller
                 ]);
             }
             
-            foreach ($validatedData['eventos_compra_cuotas'] as $cuota) {
+            /* foreach ($validatedData['eventos_compra_cuotas'] as $cuota) {
                 OrdenCompraCuotas::create([
                     'orden_compra_id' => $ordenCompra->id,
                     'title' => $cuota['title'],
@@ -467,7 +467,7 @@ class OrdenCompraController extends Controller
                     'dias_reminder' => $cuota['dias_reminder'],
                     'notes' => $cuota['notes'] ?? null,
                 ]);
-            }
+            } */
     
             DB::commit();
     
@@ -508,13 +508,13 @@ class OrdenCompraController extends Controller
             'compra_details.*.pventa' => 'required|numeric|min:0',
             'compra_details.*.total' => 'required|numeric|min:0',
 
-            'eventos_compra_cuotas' => 'required|array',
+            /* 'eventos_compra_cuotas' => 'required|array',
             'eventos_compra_cuotas.*.title' => 'required',
             'eventos_compra_cuotas.*.start' => 'required|date',
             'eventos_compra_cuotas.*.amount' => 'required|numeric|min:0',
             'eventos_compra_cuotas.*.notes' => 'nullable|string',
             'eventos_compra_cuotas.*.reminder' => 'required|date',
-            'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1',
+            'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1', */
         ]);
 
         $orden_compra = OrdenCompra::findOrFail($validatedData['compra_form']['compra_id']);
@@ -567,7 +567,7 @@ class OrdenCompraController extends Controller
             // Eliminar detalles que no están en la nueva actualización
             OrdenCompraDetails::whereIn('id', $detalles_actuales)->delete();
 
-            OrdenCompraCuotas::where('orden_compra_id', $orden_compra->id)->delete();
+            /* OrdenCompraCuotas::where('orden_compra_id', $orden_compra->id)->delete();
             
             foreach ($validatedData['eventos_compra_cuotas'] as $cuota) {
                 OrdenCompraCuotas::create([
@@ -580,7 +580,7 @@ class OrdenCompraController extends Controller
                     'dias_reminder' => $cuota['dias_reminder'],
                     'notes' => $cuota['notes'] ?? null,
                 ]);
-            }
+            } */
     
             DB::commit();
     
