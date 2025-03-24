@@ -12,6 +12,7 @@ use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\LineaFarmaceutica;
 use App\Models\Configuration\PrincipioActivo;
 use App\Models\Producto;
+use App\Models\ProductoAtributtes\Afectacion_igv;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Presentacion;
 use App\Models\ProductoAtributtes\ProductoImagen;
@@ -66,6 +67,7 @@ class ProductoController extends Controller
             'unidad_id' => 'required|numeric|exists:unidades,id',
             'laboratorio_id' => 'required|numeric|exists:laboratorio,id',
             'nombre' => 'required',
+            'afectacion_igv_id' => 'required|exists:afectaciones_igv,id',
             'categoria_id' => 'nullable|exists:categoria,id',
             'stock_seguridad' => 'required|numeric',
             'linea_farmaceutica_id' => 'required|exists:lineas_farmaceuticas,id',
@@ -195,6 +197,7 @@ class ProductoController extends Controller
             'laboratorio_id' => 'required|numeric|exists:laboratorio,id',
             'nombre' => 'required',
             'categoria_id' => 'nullable|exists:categoria,id',
+            'afectacion_igv_id' => 'required|exists:afectaciones_igv,id',
             'stock_seguridad' => 'required|numeric',
             'linea_farmaceutica_id' => 'required|exists:lineas_farmaceuticas,id',
             'fabricante_id' => 'required|exists:fabricantes_producto,id',
@@ -370,6 +373,14 @@ class ProductoController extends Controller
                 return [
                     "id" => $p->id,
                     "name" => $p->name,
+                ];
+            }),
+
+            "afectaciones_igv" => Afectacion_igv::all()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "descripcion" => $p->descripcion,
+                    "detalle" => $p->detalle
                 ];
             }),
         

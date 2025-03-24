@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('ordenes_compra_cuotas', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('orden_compra_id');
-            $table->foreign('orden_compra_id')->references('id')->on('ordenes_compra')->onDelete('restrict');
+            $table->foreign('orden_compra_id')->references('id')->on('ordenes_compra')->onDelete('cascade');
             $table->string('title');
             $table->decimal('amount',10,2);
             $table->decimal('saldo',10,2);

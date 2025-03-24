@@ -7,6 +7,7 @@ use App\Models\Configuration\FabricanteProducto;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\LineaFarmaceutica;
 use App\Models\Configuration\PrincipioActivo;
+use App\Models\ProductoAtributtes\Afectacion_igv;
 use App\Models\ProductoAtributtes\CondicionAlmacenamiento;
 use App\Models\ProductoAtributtes\Presentacion;
 use App\Models\ProductoAtributtes\ProductoEscala;
@@ -37,6 +38,7 @@ class Producto extends Model
         "descripcion",
         "registro_sanitario",
         "codigo_digemid",
+        "afectacion_igv_id",
         "pventa",
         "pcompra",
         "stock",
@@ -178,6 +180,11 @@ class Producto extends Model
     public function images_extra()
     {
         return $this->hasMany(ProductoImagen::class, 'producto_id');
+    }
+
+    public function get_afectacion()
+    {
+        return $this->belongsTo(Afectacion_igv::class, 'afectacion_igv_id');
     }
 
 

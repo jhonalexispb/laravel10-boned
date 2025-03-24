@@ -610,17 +610,15 @@ class OrdenCompraController extends Controller
         DB::beginTransaction();
 
         try {
+            OrdenCompraDetails::where('orden_compra_id', $id)->delete();
+            OrdenCompraCuotas::where('orden_compra_id', $id)->delete();
             $orden_compra->delete();
             DB::commit();
             return response()->json(["message" => "la orden de compra se eliminó correctamente."], 200);
             
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            // 🔹 Registramos el error en los logs para análisis
             Log::error("Error al eliminar orden de compra: " . $e->getMessage());
-
-            // 🔹 Mensaje genérico al usuario para seguridad
             return response()->json([
                 "error" => "Ocurrió un problema al eliminar la orden. Por favor, intenta más tarde."
             ], 500);

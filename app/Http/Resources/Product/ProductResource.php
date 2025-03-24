@@ -41,6 +41,7 @@ class ProductResource extends JsonResource
             "fabricante_id" => $this->resource->fabricante_id,
             "fabricante" => $this->resource->get_fabricante->nombre,
             "presentacion_id" => $this->resource->presentacion_id,
+            "afectacion_igv_id" => $this->resource->afectacion_igv_id,
             /* "presentacion" => $this->resource->get_presentacion->name ? $this->resource->get_presentacion->name : 'Sin presentación', */
             "condicion_almacenamiento" => $this->resource->get_condicion_almacenamiento->pluck('id')->toArray(),
             "principios_activos" => $this->resource->get_principios_activos->pluck('id')->toArray(),
