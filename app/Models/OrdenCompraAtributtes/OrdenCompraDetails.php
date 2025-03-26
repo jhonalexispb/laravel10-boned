@@ -29,6 +29,7 @@ class OrdenCompraDetails extends Model
         "p_venta",
         "condicion_vencimiento",
         "fecha_vencimiento",
+        "bonificacion",
         "state",
     ];
 

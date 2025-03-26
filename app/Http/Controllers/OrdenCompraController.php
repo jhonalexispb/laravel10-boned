@@ -409,6 +409,7 @@ class OrdenCompraController extends Controller
             'compra_details.*.pcompra' => 'required|numeric|min:0',
             'compra_details.*.pventa' => 'required|numeric|min:0',
             'compra_details.*.total' => 'required|numeric|min:0',
+            'compra_details.*.bonificacion' => 'required|boolean',
 
             /* 'eventos_compra_cuotas' => 'required|array',
             'eventos_compra_cuotas.*.title' => 'required',
@@ -453,6 +454,7 @@ class OrdenCompraController extends Controller
                     'p_venta' => $detalle['pventa'],
                     'condicion_vencimiento' => $detalle['condicion_vencimiento'],
                     'fecha_vencimiento' => $detalle['fecha_vencimiento'],
+                    'bonificacion' => $detalle['bonificacion'],
                 ]);
             }
             

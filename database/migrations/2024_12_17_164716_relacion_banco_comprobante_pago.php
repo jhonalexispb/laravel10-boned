@@ -30,6 +30,13 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('relacion_bank_comprobante', function (Blueprint $table) {
+            // 🔹 Primero elimina las claves foráneas
+            $table->dropForeign(['id_banco']);
+            $table->dropForeign(['id_comprobante_pago']);
+        });
+
+        // 🔹 Luego elimina la tabla
         Schema::dropIfExists('relacion_bank_comprobante');
     }
 };
