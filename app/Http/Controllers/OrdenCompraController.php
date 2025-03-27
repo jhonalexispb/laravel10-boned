@@ -300,6 +300,7 @@ class OrdenCompraController extends Controller
                     "sku" => $d->getProducto->sku,
                     "imagen" => $d->getProducto->imagen ?? env("IMAGE_DEFAULT"),
                     "total" => $d->total,
+                    "bonificacion" => (bool) $d->bonificacion,
                 ];
             })
         ]);
@@ -381,6 +382,7 @@ class OrdenCompraController extends Controller
                     "pventa" => $d->p_venta,
                     "sku" => $d->getProducto->sku,
                     "total" => $d->total,
+                    "bonificacion" => (bool) $d->bonificacion,
                 ];
             })
         ]);
@@ -509,6 +511,7 @@ class OrdenCompraController extends Controller
             'compra_details.*.pcompra' => 'required|numeric|min:0',
             'compra_details.*.pventa' => 'required|numeric|min:0',
             'compra_details.*.total' => 'required|numeric|min:0',
+            'compra_details.*.bonificacion' => 'required|boolean',
 
             /* 'eventos_compra_cuotas' => 'required|array',
             'eventos_compra_cuotas.*.title' => 'required',
@@ -545,11 +548,18 @@ class OrdenCompraController extends Controller
                 "fecha_ingreso" => $validatedData['compra_form']['fecha_ingreso'],
             ]);
 
-            $detalles_actuales = $orden_compra->detalles()->pluck('id', 'producto_id');
+            $detalles_actuales = $orden_compra->detalles()
+                ->get()
+                ->mapWithKeys(function ($detalle) {
+                    return [ $detalle->producto_id . '_' . $detalle->bonificacion => $detalle->id ];
+                })
+                ->toArray();
 
             foreach ($validatedData['compra_details'] as $detalle) {
+                $key = $detalle['producto_id'] . '_' . $detalle['bonificacion'];
+            
                 OrdenCompraDetails::updateOrCreate(
-                    ['orden_compra_id' => $orden_compra->id, 'producto_id' => $detalle['producto_id']],
+                    ['orden_compra_id' => $orden_compra->id, 'producto_id' => $detalle['producto_id'], 'bonificacion' => $detalle['bonificacion']],
                     [
                         'unit_id' => 1, // Unidad por defecto
                         'cantidad' => $detalle['cantidad'],
@@ -561,11 +571,11 @@ class OrdenCompraController extends Controller
                         'fecha_vencimiento' => $detalle['fecha_vencimiento'],
                     ]
                 );
-    
-                // Eliminar del array de detalles actuales para identificar los eliminados
-                unset($detalles_actuales[$detalle['producto_id']]);
+            
+                // Eliminar del array para detectar los eliminados
+                unset($detalles_actuales[$key]);
             }
-    
+            
             // Eliminar detalles que no están en la nueva actualización
             OrdenCompraDetails::whereIn('id', $detalles_actuales)->delete();
 
