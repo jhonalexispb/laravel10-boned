@@ -8,17 +8,15 @@ use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
 use App\Models\OrdenCompraAtributtes\OrdenCompraCuotas;
 use App\Models\OrdenCompraAtributtes\OrdenCompraDetails;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
+use OwenIt\Auditing\Contracts\Auditable;
+use App\Models\Traits\AuditableTrait;
 
-class OrdenCompra extends Model
+class OrdenCompra extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, LogsActivity;
-
+    use HasFactory, SoftDeletes, \OwenIt\Auditing\Auditable, AuditableTrait;
     protected $table = "ordenes_compra";
     protected $fillable = [
         "codigo",
@@ -36,26 +34,9 @@ class OrdenCompra extends Model
         "total",
         "fecha_ingreso",
         "state",
+        "created_by",
+        "updated_by",
     ];
-
-    public function getActivitylogOptions(): LogOptions
-    {
-        // Aquí defines cómo se registrarán las actividades
-        return LogOptions::defaults()
-            ->logAll()  // Si deseas registrar todos los cambios
-            ->logOnlyDirty()  // Opción de solo registrar cambios realizados (no todos los atributos)
-            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Condicion almacenamiento");
-    }
-
-    public function setCreatedAtAttribute($value){
-        date_default_timezone_set("America/Lima");
-        $this->attributes["created_at"] = Carbon::now();
-    }
-
-    public function setUpdatedAtAttribute($value){
-        date_default_timezone_set("America/Lima");
-        $this->attributes["updated_at"] = Carbon::now();
-    }
 
     public static function generarCodigo()
     {
@@ -63,7 +44,9 @@ class OrdenCompra extends Model
         $prefijo = "OC-$año-";
 
         // Buscar todas las órdenes con el prefijo actual
-        $ultimosCodigos = self::where('codigo', 'LIKE', "$prefijo%")->pluck('codigo');
+        $ultimosCodigos = self::withTrashed()
+        ->where('codigo', 'LIKE', "$prefijo%")
+        ->pluck('codigo');
 
         $maxNumero = 0; // Inicializar el número máximo
 

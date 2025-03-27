@@ -12,6 +12,7 @@
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "maatwebsite/excel": "^3.1",
+        "owen-it/laravel-auditing": "13.7",
         "spatie/laravel-activitylog": "^4.9",
         "spatie/laravel-permission": "^6.10",
         "tymon/jwt-auth": "^2.1"

@@ -11,6 +11,7 @@ use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use App\Models\Producto;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -368,6 +369,7 @@ class OrdenCompraController extends Controller
             ],
             'order_compra_detail' => $ordenCompra_detail->map(function($d){
                 return [
+                    "id" => $d->id,
                     "cantidad" => $d->cantidad,
                     "caracteristicas" => $d->getProducto->caracteristicas ?? '',
                     "color_laboratorio" => $d->getProducto->get_laboratorio->color,
@@ -412,14 +414,6 @@ class OrdenCompraController extends Controller
             'compra_details.*.pventa' => 'required|numeric|min:0',
             'compra_details.*.total' => 'required|numeric|min:0',
             'compra_details.*.bonificacion' => 'required|boolean',
-
-            /* 'eventos_compra_cuotas' => 'required|array',
-            'eventos_compra_cuotas.*.title' => 'required',
-            'eventos_compra_cuotas.*.start' => 'required|date',
-            'eventos_compra_cuotas.*.amount' => 'required|numeric|min:0',
-            'eventos_compra_cuotas.*.notes' => 'nullable|string',
-            'eventos_compra_cuotas.*.reminder' => 'required|date',
-            'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1', */
         ]);
 
         try {
@@ -459,19 +453,6 @@ class OrdenCompraController extends Controller
                     'bonificacion' => $detalle['bonificacion'],
                 ]);
             }
-            
-            /* foreach ($validatedData['eventos_compra_cuotas'] as $cuota) {
-                OrdenCompraCuotas::create([
-                    'orden_compra_id' => $ordenCompra->id,
-                    'title' => $cuota['title'],
-                    'amount' => $cuota['amount'],
-                    'saldo' => $cuota['amount'],
-                    'start' => $cuota['start'],
-                    'reminder' => $cuota['reminder'],
-                    'dias_reminder' => $cuota['dias_reminder'],
-                    'notes' => $cuota['notes'] ?? null,
-                ]);
-            } */
     
             DB::commit();
     
@@ -503,6 +484,7 @@ class OrdenCompraController extends Controller
             'compra_form.descripcion' => 'nullable',
 
             'compra_details' => 'required|array',
+            'compra_details.*.id' => 'nullable|integer|exists:ordenes_compra_detail,id',
             'compra_details.*.producto_id' => 'required|integer|exists:productos,id',
             'compra_details.*.cantidad' => 'required|integer|min:1',
             'compra_details.*.condicion_vencimiento' => 'required|boolean',
@@ -512,14 +494,6 @@ class OrdenCompraController extends Controller
             'compra_details.*.pventa' => 'required|numeric|min:0',
             'compra_details.*.total' => 'required|numeric|min:0',
             'compra_details.*.bonificacion' => 'required|boolean',
-
-            /* 'eventos_compra_cuotas' => 'required|array',
-            'eventos_compra_cuotas.*.title' => 'required',
-            'eventos_compra_cuotas.*.start' => 'required|date',
-            'eventos_compra_cuotas.*.amount' => 'required|numeric|min:0',
-            'eventos_compra_cuotas.*.notes' => 'nullable|string',
-            'eventos_compra_cuotas.*.reminder' => 'required|date',
-            'eventos_compra_cuotas.*.dias_reminder' => 'required|integer|min:1', */
         ]);
 
         $orden_compra = OrdenCompra::findOrFail($validatedData['compra_form']['compra_id']);
@@ -548,51 +522,55 @@ class OrdenCompraController extends Controller
                 "fecha_ingreso" => $validatedData['compra_form']['fecha_ingreso'],
             ]);
 
-            $detalles_actuales = $orden_compra->detalles()
-                ->get()
-                ->mapWithKeys(function ($detalle) {
-                    return [ $detalle->producto_id . '_' . $detalle->bonificacion => $detalle->id ];
-                })
-                ->toArray();
+            // Obtener los IDs actuales de la orden de compra
+            $ids_actuales = OrdenCompraDetails::where('orden_compra_id', $orden_compra->id)
+            ->pluck('id')
+            ->toArray();
+
+            // Obtener los IDs enviados (excluyendo valores null o vacíos)
+            $ids_enviados = array_filter(array_column($validatedData['compra_details'], 'id'), function ($id) {
+                return !empty($id) && is_numeric($id);
+            });
+
+            // Eliminar los productos que ya no están en la lista enviada
+            $ids_a_eliminar = array_diff($ids_actuales, $ids_enviados);
+            if (!empty($ids_a_eliminar)) {
+                OrdenCompraDetails::whereIn('id', $ids_a_eliminar)->delete();
+            }
 
             foreach ($validatedData['compra_details'] as $detalle) {
-                $key = $detalle['producto_id'] . '_' . $detalle['bonificacion'];
-            
-                OrdenCompraDetails::updateOrCreate(
-                    ['orden_compra_id' => $orden_compra->id, 'producto_id' => $detalle['producto_id'], 'bonificacion' => $detalle['bonificacion']],
-                    [
-                        'unit_id' => 1, // Unidad por defecto
+                if (!empty($detalle['id']) && is_numeric($detalle['id'])) {
+                    // Si el ID es válido, actualizamos el producto existente
+                    OrdenCompraDetails::where('id', $detalle['id'])
+                        ->update([
+                            'producto_id' => $detalle['producto_id'],
+                            'cantidad' => $detalle['cantidad'],
+                            'p_compra' => $detalle['pcompra'],
+                            'total' => $detalle['total'],
+                            'margen_ganancia' => $detalle['margen_ganancia'],
+                            'p_venta' => $detalle['pventa'],
+                            'condicion_vencimiento' => $detalle['condicion_vencimiento'],
+                            'fecha_vencimiento' => $detalle['fecha_vencimiento'],
+                            'bonificacion' => $detalle['bonificacion'],
+                            'updated_by' => auth()->id(),
+                        ]);
+                } else {
+                    // Si el ID es null o vacío, creamos un nuevo registro
+                    OrdenCompraDetails::create([
+                        'orden_compra_id' => $orden_compra->id,
+                        'producto_id' => $detalle['producto_id'],
                         'cantidad' => $detalle['cantidad'],
                         'p_compra' => $detalle['pcompra'],
+                        'unit_id' => 1,
                         'total' => $detalle['total'],
                         'margen_ganancia' => $detalle['margen_ganancia'],
                         'p_venta' => $detalle['pventa'],
                         'condicion_vencimiento' => $detalle['condicion_vencimiento'],
                         'fecha_vencimiento' => $detalle['fecha_vencimiento'],
-                    ]
-                );
-            
-                // Eliminar del array para detectar los eliminados
-                unset($detalles_actuales[$key]);
+                        'bonificacion' => $detalle['bonificacion'],
+                    ]);
+                }
             }
-            
-            // Eliminar detalles que no están en la nueva actualización
-            OrdenCompraDetails::whereIn('id', $detalles_actuales)->delete();
-
-            /* OrdenCompraCuotas::where('orden_compra_id', $orden_compra->id)->delete();
-            
-            foreach ($validatedData['eventos_compra_cuotas'] as $cuota) {
-                OrdenCompraCuotas::create([
-                    'orden_compra_id' => $orden_compra->id,
-                    'title' => $cuota['title'],
-                    'amount' => $cuota['amount'],
-                    'saldo' => $cuota['amount'],
-                    'start' => $cuota['start'],
-                    'reminder' => $cuota['reminder'],
-                    'dias_reminder' => $cuota['dias_reminder'],
-                    'notes' => $cuota['notes'] ?? null,
-                ]);
-            } */
     
             DB::commit();
     
@@ -623,6 +601,14 @@ class OrdenCompraController extends Controller
 
         try {
             OrdenCompraDetails::where('orden_compra_id', $id)->delete();
+            $details = OrdenCompraDetails::where('orden_compra_id', $id)->get();
+
+            foreach ($details as $detail) {
+                $detail->deleted_by = Auth::id();
+                $detail->saveQuietly(); // Guardar sin activar eventos innecesarios
+                $detail->delete(); // Eliminar individualmente para activar eventos
+            }
+            
             OrdenCompraCuotas::where('orden_compra_id', $id)->delete();
             $orden_compra->delete();
             DB::commit();
@@ -635,5 +621,46 @@ class OrdenCompraController extends Controller
                 "error" => "Ocurrió un problema al eliminar la orden. Por favor, intenta más tarde."
             ], 500);
         }
+    }
+
+    public function change_state(Request $request, $id){
+        $request->validate([
+            'state' => 'required|in:0,1',
+        ]);
+
+        $ordenCompra = OrdenCompra::findOrFail($id);
+
+        $ordenCompra->update(['state' => $request->state]);
+
+        $message = $request->state == 1 
+        ? 'Orden de compra recepcionada correctamente' 
+        : 'Orden de compra revertida, ya no está recepcionada';
+
+        return response()->json([
+            'message' => $message,
+            'order_compra' => [
+                "id" => $ordenCompra->id,
+                "codigo" => $ordenCompra->codigo,
+                "proveedor" => $ordenCompra->getProveedor->name,
+                "type_comprobante" => $ordenCompra->getTypeComprobante->name,
+                "forma_pago" => $ordenCompra->getFormaPago->name,
+                "descripcion" => $ordenCompra->descripcion,
+                "total" => $ordenCompra->total,
+                "igv" => $ordenCompra->igv,
+                "state" => $ordenCompra->state,
+                "created_at" => $ordenCompra->created_at->format("Y-m-d h:i A"),
+                "cuotas_pendientes" => $ordenCompra->cuotas_pendientes,
+                "cuotas" => $ordenCompra->getCuotas->map(function ($c) {
+                    return [
+                        "monto" => $c->amount,
+                        "fecha_pago" => $c->start,
+                        "comentario" => $c->notes,
+                        "state" => $c->state,
+                        "numero_unico" => $c->numero_unico,
+                        "fecha_cancelado" => $c->fecha_cancelado,
+                    ];
+                })
+            ]
+        ], 200);
     }
 }

@@ -30,6 +30,9 @@ return new class extends Migration
             $table->boolean('bonificacion')->comment('0 no y 1 si');
             $table->date('fecha_vencimiento');
             $table->tinyInteger('state')->default(0)->comment('0 es solicitado, 1 es ingresado, 2 es rechazado');
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('deleted_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
         });

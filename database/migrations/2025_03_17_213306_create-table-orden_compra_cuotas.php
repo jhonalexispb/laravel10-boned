@@ -24,6 +24,8 @@ return new class extends Migration
             $table->dateTime('fecha_cancelado')->nullable();
             $table->boolean('notificado')->default(0)->comment('0 es pendiente, y 1 es notificado');
             $table->integer('intentos_envio')->default(0);
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->softDeletes();
 
@@ -35,7 +37,7 @@ return new class extends Migration
      * Reverse the migrations.
      */
     public function down(): void
-    {
+    {   
         Schema::dropIfExists('ordenes_compra_cuotas');
     }
 };

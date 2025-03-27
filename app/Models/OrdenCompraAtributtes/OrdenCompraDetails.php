@@ -5,16 +5,16 @@ namespace App\Models\OrdenCompraAtributtes;
 use App\Models\OrdenCompra;
 use App\Models\Producto;
 use App\Models\ProductoAtributtes\Unidad;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
+use OwenIt\Auditing\Contracts\Auditable;
+use App\Models\Traits\AuditableTrait;
+use Illuminate\Support\Facades\Auth;
 
-class OrdenCompraDetails extends Model
+class OrdenCompraDetails extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, \OwenIt\Auditing\Auditable, AuditableTrait;
 
     protected $table = "ordenes_compra_detail";
     protected $fillable = [
@@ -31,25 +31,19 @@ class OrdenCompraDetails extends Model
         "fecha_vencimiento",
         "bonificacion",
         "state",
+        "created_by",
+        "updated_by",
+        "deleted_by"
     ];
 
-    public function getActivitylogOptions(): LogOptions
+    public function delete()
     {
-        // Aquí defines cómo se registrarán las actividades
-        return LogOptions::defaults()
-            ->logAll()  // Si deseas registrar todos los cambios
-            ->logOnlyDirty()  // Opción de solo registrar cambios realizados (no todos los atributos)
-            ->setDescriptionForEvent(fn(string $eventName) => "{$eventName} Condicion almacenamiento");
-    }
+        if (Auth::check()) {
+            $this->deleted_by = Auth::id();
+            $this->saveQuietly(); // Guarda sin disparar eventos innecesarios
+        }
 
-    public function setCreatedAtAttribute($value){
-        date_default_timezone_set("America/Lima");
-        $this->attributes["created_at"] = Carbon::now();
-    }
-
-    public function setUpdatedAtAttribute($value){
-        date_default_timezone_set("America/Lima");
-        $this->attributes["updated_at"] = Carbon::now();
+        return parent::delete();
     }
 
     public function getOrdenCompra(){
