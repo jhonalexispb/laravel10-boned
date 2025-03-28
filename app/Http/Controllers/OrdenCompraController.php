@@ -282,8 +282,14 @@ class OrdenCompraController extends Controller
     }
 
     public function getProductosOrdenCompra($id){
+        $orderCompra = OrdenCompra::findOrFail($id);
         $ordenCompra_detail = OrdenCompraDetails::where('orden_compra_id',$id)->get();
         return response()->json([
+            'order_compra' => [
+                'codigo' => $orderCompra->codigo,
+                'proveedor' => $orderCompra->getProveedor->name,
+                'comprobante' => $orderCompra->getTypeComprobante->name
+            ],
             'order_compra_detail' => $ordenCompra_detail->map(function($d){
                 return [
                     "cantidad" => $d->cantidad,
