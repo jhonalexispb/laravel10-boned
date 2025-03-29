@@ -23,6 +23,7 @@ class ProductResource extends JsonResource
             "unidad" => $this->resource->get_unidad->name,
             "laboratorio_id" => $this->resource->laboratorio_id,
             "laboratorio" => $this->resource->get_laboratorio->name,
+            "color_laboratorio" => $this->resource->get_laboratorio->color,
             "nombre" => $this->resource->nombre,
             "caracteristicas" => $this->resource->caracteristicas,
             "nombre_completo" => $this->resource->nombre.' '.$this->caracteristicas,
