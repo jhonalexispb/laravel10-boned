@@ -17,13 +17,18 @@ class ProductoLotesController extends Controller
 
         return response()->json([
             "lotes" => $lotes->map(function($b) use ($hoy){
-                $fechaVencimiento = \Carbon\Carbon::parse($b->fecha_vencimiento);
-                $dias_faltantes = $hoy->diffInDays($fechaVencimiento, false);
+                if($b->fecha_vencimiento){
+                    $fechaVencimiento = \Carbon\Carbon::parse($b->fecha_vencimiento)->format('d-m-Y');
+                    $dias_faltantes = $hoy->diffInDays($fechaVencimiento, false);
+                }else{
+                    $fechaVencimiento = 'Sin fecha de vencimiento';
+                    $dias_faltantes = null;
+                }
                 return [
                     "id" => $b->id,
                     "fecha_vencimiento" => $fechaVencimiento,
                     "dias_faltantes" => $dias_faltantes,
-                    "lote" => $b->lote,
+                    "lote" => $b->lote ?? 'Sin lote',
                     "cantidad" => $b->cantidad,
                     "state" => $b->state,
                 ];
@@ -31,6 +36,7 @@ class ProductoLotesController extends Controller
 
             "lotes_activos" => $producto->get_lotes()->where('state', 1)->count(),
             "lotes_inactivos" => $producto->get_lotes()->where('state', 0)->count(),
+            "stock" => $producto->stock
         ]);
     }
 

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->decimal('importe',8,2);
             $table->decimal('igv',8,2);
             $table->decimal('total',8,2);
-            $table->tinyInteger('state')->default(0)->comment('0 es anulado, 1 es conforme, 2 es nota de credito');
+            $table->tinyInteger('state')->default(0)->comment('0 es conforme, 1 es anulado, 2 es nota de credito');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

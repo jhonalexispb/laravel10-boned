@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('producto_id');
             $table->foreign('producto_id')->references('id')->on('productos')->onDelete('cascade');
-            $table->date('fecha_vencimiento');
-            $table->string('lote');
+            $table->date('fecha_vencimiento')->nullable();
+            $table->string('lote')->nullable();
             $table->integer('cantidad')->default(0);
             $table->boolean('state')->default(1)->comment('1 es activo se puede vender y 2 es inactivo no se puede vender');
             $table->timestamps();

@@ -3,17 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\Configuration\Proveedor;
+use App\Models\Configuration\TypeComprobante;
+use App\Models\Configuration\TypeComprobanteSerie;
+use App\Models\GuiaDevolucion;
+use App\Models\GuiaDevolucionAtributtes\GuiaDevolucionDetail;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
+use App\Models\OrdenCompraAtributtes\NDocumentoOrdenCompra;
 use App\Models\OrdenCompraAtributtes\OrdenCompraCuotas;
 use App\Models\OrdenCompraAtributtes\OrdenCompraDetails;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
+use App\Models\OrdenCompraAtributtes\OrderCompraDetailsGestionado;
 use App\Models\Producto;
+use App\Models\ProductoAtributtes\Afectacion_igv;
+use App\Models\ProductoAtributtes\HistorialPrecioCompra;
+use App\Models\ProductoAtributtes\HistorialPrecioVenta;
+use App\Models\ProductoAtributtes\ProductoLotes;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Validator;
 
 class OrdenCompraController extends Controller
 {
@@ -282,13 +293,79 @@ class OrdenCompraController extends Controller
     }
 
     public function getProductosOrdenCompra($id){
-        $orderCompra = OrdenCompra::findOrFail($id);
-        $ordenCompra_detail = OrdenCompraDetails::where('orden_compra_id',$id)->get();
+        $orderCompra = OrdenCompra::with(['comprobante'])->findOrFail($id);
+        $ordenCompra_detail = OrdenCompraDetails::with([
+            'getProducto'
+        ])->where('orden_compra_id',$id)
+            ->where('state',0)
+            ->get();
+        $afectacion_igv = Afectacion_igv::all();
         return response()->json([
             'order_compra' => [
+                'id' => $orderCompra->id,
                 'codigo' => $orderCompra->codigo,
                 'proveedor' => $orderCompra->getProveedor->name,
-                'comprobante' => $orderCompra->getTypeComprobante->name
+                'comprobante' => $orderCompra->getTypeComprobante->name,
+                'comprobante_id' => $orderCompra->type_comprobante_compra_id
+            ],
+            'order_compra_detail' => $ordenCompra_detail->map(function($d){
+                return [
+                    "cantidad" => $d->cantidad_pendiente,
+                    "caracteristicas" => $d->getProducto->caracteristicas ?? '',
+                    "color_laboratorio" => $d->getProducto->get_laboratorio->color,
+                    "condicion_vencimiento" => $d->condicion_vencimiento,
+                    "fecha_vencimiento" => $d->fecha_vencimiento,
+                    "ganancia" => number_format($d->cantidad * ($d->p_venta - $d->p_compra), 2, '.', ''),
+                    "laboratorio" => $d->getProducto->get_laboratorio->name,
+                    "margen_minimo" => $d->margen_ganancia,
+                    "nombre" => $d->getProducto->nombre ?? 'Sin nombre',
+                    "pcompra" => $d->p_compra,
+                    "producto_id" => $d->producto_id,
+                    "afectacion_producto_id" => $d->getProducto->afectacion_igv_id,
+                    "pventa" => $d->p_venta,
+                    "sku" => $d->getProducto->sku,
+                    "imagen" => $d->getProducto->imagen ?? env("IMAGE_DEFAULT"),
+                    "total" => $d->total,
+                    "bonificacion" => (bool) $d->bonificacion,
+                ];
+            }),
+
+            'afectacion_igv' => $afectacion_igv->map(function($d){
+                return [
+                    "id" => $d->id,
+                    "descripcion" => $d->descripcion,
+                    "detalle" => $d->detalle,
+                    "codigo" => $d->codigo,
+                ];
+            }),
+
+            'comprobantes' => $orderCompra->comprobante?->map(function($c){
+                return [
+                    "id" => $c->id,
+                    "serie" => $c->serie,
+                    "n_documento" => $c->n_documento,
+                    "igv_state" => $c->igv_state,
+                    "fecha_emision" => Carbon::parse($c->fecha_emision)->format("Y-m-d"),
+                    "modo_pago" => $c->modo_pago,
+                ];
+            }) ?? collect(),
+        ]);
+    }
+
+    public function getProductosOrdenCompraToWatch($id){
+        $orderCompra = OrdenCompra::with(['comprobante'])->findOrFail($id);
+        $ordenCompra_detail = OrdenCompraDetails::with([
+            'getProducto'
+        ])->where('orden_compra_id',$id)
+            ->get();
+        $afectacion_igv = Afectacion_igv::all();
+        return response()->json([
+            'order_compra' => [
+                'id' => $orderCompra->id,
+                'codigo' => $orderCompra->codigo,
+                'proveedor' => $orderCompra->getProveedor->name,
+                'comprobante' => $orderCompra->getTypeComprobante->name,
+                'comprobante_id' => $orderCompra->type_comprobante_compra_id
             ],
             'order_compra_detail' => $ordenCompra_detail->map(function($d){
                 return [
@@ -303,19 +380,40 @@ class OrdenCompraController extends Controller
                     "nombre" => $d->getProducto->nombre ?? 'Sin nombre',
                     "pcompra" => $d->p_compra,
                     "producto_id" => $d->producto_id,
+                    "afectacion_producto_id" => $d->getProducto->afectacion_igv_id,
                     "pventa" => $d->p_venta,
                     "sku" => $d->getProducto->sku,
                     "imagen" => $d->getProducto->imagen ?? env("IMAGE_DEFAULT"),
                     "total" => $d->total,
                     "bonificacion" => (bool) $d->bonificacion,
                 ];
-            })
+            }),
+
+            'afectacion_igv' => $afectacion_igv->map(function($d){
+                return [
+                    "id" => $d->id,
+                    "descripcion" => $d->descripcion,
+                    "detalle" => $d->detalle,
+                    "codigo" => $d->codigo,
+                ];
+            }),
+
+            'comprobantes' => $orderCompra->comprobante?->map(function($c){
+                return [
+                    "id" => $c->id,
+                    "serie" => $c->serie,
+                    "n_documento" => $c->n_documento,
+                    "igv_state" => $c->igv_state,
+                    "fecha_emision" => Carbon::parse($c->fecha_emision)->format("Y-m-d"),
+                    "modo_pago" => $c->modo_pago == 1 ? 'CONTADO' : 'CRÉDITO',
+                ];
+            }) ?? collect(),
         ]);
     }
 
     public function index(Request $request)  {
         $search = $request->get('search');
-        $order_compra_list = OrdenCompra::with(['getProveedor:id,name', 'getTypeComprobante:id,name', 'getFormaPago:id,name','getCuotas'])
+        $order_compra_list = OrdenCompra::with(['getProveedor:id,name', 'getTypeComprobante:id,name', 'getFormaPago:id,name','getCuotas','comprobante','guia_devolucion'])
                     ->withCount(['getCuotas as cuotas_pendientes' => function($query) {
                         $query->where('state', 0);
                     }])
@@ -347,7 +445,28 @@ class OrdenCompraController extends Controller
                             "numero_unico" => $c->numero_unico,
                             "fecha_cancelado" => $c->fecha_cancelado,
                         ];
-                    })
+                    }),
+                    'comprobantes' => $d->comprobante?->map(function($c){
+                        return [
+                            "id" => $c->id,
+                            "serie" => $c->serie,
+                            "n_documento" => $c->n_documento,
+                            "igv_state" => $c->igv_state,
+                            "fecha_emision" => Carbon::parse($c->fecha_emision)->format("Y-m-d"),
+                            "modo_pago" => $c->modo_pago == 1 ? 'CONTADO' : 'CRÉDITO',
+                        ];
+                    }) ?? collect(),
+                    'guias_devolucion' => $d->guia_devolucion?->map(function($c){
+                        return [
+                            "id" => $c->id,
+                            "serie" => $c->typeComprobanteSerie->serie,
+                            "correlativo" => $c->correlativo,
+                            "created_at" => Carbon::parse($c->created_at)->format("Y-m-d"),
+                            "state" => $c->state = 1 ? 'SOLVENTADO' : 'SOLICITADO',
+                            "descripcion" => $c->descripcion,
+                            "date_justificado" => $c->date_justificado ? Carbon::parse($c->date_justificado)->format("Y-m-d") : '',
+                        ];
+                    }) ?? collect(),
                 ];
             })
         ]);
@@ -450,6 +569,7 @@ class OrdenCompraController extends Controller
                     //La unidad por el momento sera 1 hasta trabajar con otras unidades
                     'unit_id' => 1,
                     'cantidad' => $detalle['cantidad'],
+                    'cantidad_pendiente' => $detalle['cantidad'],
                     'p_compra' => $detalle['pcompra'],
                     'total' => $detalle['total'],
                     'margen_ganancia' => $detalle['margen_ganancia'],
@@ -551,6 +671,7 @@ class OrdenCompraController extends Controller
                         ->update([
                             'producto_id' => $detalle['producto_id'],
                             'cantidad' => $detalle['cantidad'],
+                            'cantidad_pendiente' => $detalle['cantidad'],
                             'p_compra' => $detalle['pcompra'],
                             'total' => $detalle['total'],
                             'margen_ganancia' => $detalle['margen_ganancia'],
@@ -566,6 +687,7 @@ class OrdenCompraController extends Controller
                         'orden_compra_id' => $orden_compra->id,
                         'producto_id' => $detalle['producto_id'],
                         'cantidad' => $detalle['cantidad'],
+                        'cantidad_pendiente' => $detalle['cantidad'],
                         'p_compra' => $detalle['pcompra'],
                         'unit_id' => 1,
                         'total' => $detalle['total'],
@@ -636,7 +758,16 @@ class OrdenCompraController extends Controller
 
         $ordenCompra = OrdenCompra::findOrFail($id);
 
-        $ordenCompra->update(['state' => $request->state]);
+        if($request->state == 1){
+            $date = Carbon::now();
+        }else{
+            $date = null;
+        }
+
+        $ordenCompra->update([
+            'state' => $request->state,
+            'date_recepcion' => $date
+        ]);
 
         $message = $request->state == 1 
         ? 'Orden de compra recepcionada correctamente' 
@@ -668,5 +799,289 @@ class OrdenCompraController extends Controller
                 })
             ]
         ], 200);
+    }
+
+    public function getLoteProductoOrdenCompra($id){
+        $producto = Producto::with(['get_lotes' => function($query) {
+            $query->where('state', 1)
+                    ->whereNotNull('lote')
+                    ->whereNotNull('fecha_vencimiento');
+        }])->findOrFail($id);
+    
+        // Extraer los campos 'lote' y 'fecha_vencimiento'
+        $lotesFiltrados = $producto->get_lotes->map(function ($lote) {
+            return [
+                'id' => $lote->id,
+                'lote' => $lote->lote,
+                'fecha_vencimiento' => $lote->fecha_vencimiento,
+            ];
+        });
+    
+        return response()->json($lotesFiltrados);
+    }
+
+    public function register_comprobantes_order_compra(Request $request, $id){
+        $data = $request->all();
+        $rules = [
+            '*.orden_compra_id' => 'required|integer|exists:ordenes_compra,id',
+            '*.type_comprobante_compra_id' => 'required|integer|exists:type_comprobante_pago_compra,id',
+            '*.serie' => 'required|string',
+            '*.n_documento' => 'required|string',
+            '*.igv_state' => 'required|boolean',
+            '*.importe' => 'required|numeric|min:0',
+            '*.igv' => 'required|numeric|min:0',
+            '*.total' => 'required|numeric|min:0',
+            '*.fecha_emision' => 'required|date',
+            '*.modo_pago' => 'required|boolean',
+            '*.comentario' => 'nullable|string',
+            
+            // Productos dentro del comprobante
+            '*.productos' => 'required|array|min:1',
+            '*.productos.*.afectacion_id' => 'required|integer|exists:afectaciones_igv,id',
+            '*.productos.*.producto_id' => 'required|integer|exists:productos,id',
+            '*.productos.*.cantidad' => 'required|numeric|min:0',
+            '*.productos.*.total' => 'required|numeric|min:0',
+            '*.productos.*.bonificacion' => 'required|boolean',
+            '*.productos.*.comentario' => 'nullable|string',
+            '*.productos.*.pcompra' => 'required|numeric|min:0',
+            '*.productos.*.pventa' => 'required|numeric|min:0',
+            '*.productos.*.guia_devolucion' => 'required|boolean',
+            '*.productos.*.cantidad_pendiente' => 'required|numeric|min:0',
+            '*.productos.*.cantidad_reemplazo' => 'required|numeric|min:0',
+
+            // Lotes dentro de productos
+            '*.productos.*.lotes' => 'required|array|min:1',
+            '*.productos.*.lotes.*.cantidad' => 'required|numeric|min:0',
+            '*.productos.*.lotes.*.fecha_vencimiento' => 'nullable|date',
+            '*.productos.*.lotes.*.lote' => 'nullable|string',
+            '*.productos.*.lotes.*.producto_id' => 'required|integer|exists:productos,id',
+        ];
+
+        $validator = Validator::make($data, $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $validatedData = $validator->validated();
+
+        try {
+            DB::beginTransaction();
+
+            $productosConsolidados = [];
+            $productos_guia_devolucion = [];
+            $nuevo_estado = 4;
+
+            foreach ($validatedData as $comprobanteData) {
+                // Obtener la orden de compra para extraer el proveedor
+                $orden = OrdenCompra::findOrFail($comprobanteData['orden_compra_id']);
+                $proveedor_id = $orden->proveedor_id;
+
+                // Verificar si ya existe el comprobante en esta orden de compra
+                $comprobanteActual = NDocumentoOrdenCompra::where('serie', $comprobanteData['serie'])
+                    ->where('n_documento', $comprobanteData['n_documento'])
+                    ->where('orden_compra_id', $comprobanteData['orden_compra_id'])
+                    ->first();
+
+                // Verificar si ese mismo comprobante ya fue usado por el proveedor en otra orden
+                $comprobanteDuplicado = NDocumentoOrdenCompra::where('serie', $comprobanteData['serie'])
+                    ->where('n_documento', $comprobanteData['n_documento'])
+                    ->whereHas('order_compra', function($query) use ($proveedor_id, $comprobanteData) {
+                        $query->where('proveedor_id', $proveedor_id)
+                            ->where('id', '!=', $comprobanteData['orden_compra_id']);
+                    })
+                    ->first();
+
+                if ($comprobanteDuplicado) {
+                    // Ya fue usado por el proveedor en otra orden, no se permite
+                    throw new \Exception("El comprobante {$comprobanteData['serie']}-{$comprobanteData['n_documento']} ya fue usado por este proveedor en otra orden de compra.");
+                }
+                if($comprobanteActual){
+                    $comprobante = $comprobanteActual;
+                }else{
+                    $comprobante = NDocumentoOrdenCompra::create([
+                        "orden_compra_id" => $comprobanteData['orden_compra_id'],
+                        "type_comprobante_compra_id" => $comprobanteData['type_comprobante_compra_id'],
+                        "serie" => $comprobanteData['serie'],
+                        "n_documento" => $comprobanteData['n_documento'],
+                        "igv_state" => $comprobanteData['igv_state'],
+                        "modo_pago" => $comprobanteData['modo_pago'],
+                        "importe" => $comprobanteData['importe'],
+                        "igv" => $comprobanteData['igv'],
+                        "total" => $comprobanteData['total'],
+                        "fecha_emision" => $comprobanteData['fecha_emision'],
+                        "comentario" => $comprobanteData['comentario'],
+                    ]);
+                }
+    
+                foreach ($comprobanteData['productos'] as $producto) {
+                    $key = $producto['producto_id'] . '-' . ($producto['bonificacion'] ? '1' : '0');
+
+                    if (!isset($productosConsolidados[$key])) {
+                        $productosConsolidados[$key] = [
+                            'producto_id' => $producto['producto_id'],
+                            'bonificacion' => $producto['bonificacion'],
+                            'cantidad_total' => 0,
+                            'cantidad_reemplazo' => 0,
+                            'cantidad_pendiente' => 0,
+                            'guia_devolucion' => false,
+                        ];
+                    }
+
+                    $productosConsolidados[$key]['cantidad_total'] += $producto['cantidad'];
+                    $productosConsolidados[$key]['cantidad_reemplazo'] += ($producto['cantidad'] + $producto['cantidad_pendiente']);
+                    $productosConsolidados[$key]['cantidad_pendiente'] += $producto['cantidad_pendiente'];
+                    if (!empty($producto['guia_devolucion'])) {
+                        $productosConsolidados[$key]['guia_devolucion'] = true;
+                        $productos_guia_devolucion[] = [
+                            'producto_id' => $producto['producto_id'],
+                            'cantidad_pendiente' => $producto['cantidad_pendiente']
+                        ];
+                    }
+
+                    OrderCompraDetailsGestionado::create([
+                        "orden_compra_id" => $comprobanteData['orden_compra_id'],
+                        "oc_n_comprob_id" => $comprobante->id,
+                        "afectacion_id" => $producto['afectacion_id'],
+                        "unit_id" => 1, //por mientras hasta implementar venta de cajas, paquetes, etc
+                        "producto_id" => $producto['producto_id'],
+                        "cantidad" => $producto['cantidad'],
+                        "total" => $producto['total'],
+                        "bonificacion" => $producto['bonificacion'],
+                        "comentario" => $producto['comentario'],
+                        "pcompra" => $producto['pcompra'],
+                    ]);
+
+                    $productoModel = Producto::find($producto['producto_id']);
+                    if(!$producto['bonificacion']){
+                        HistorialPrecioCompra::create([
+                            'producto_id' => $producto['producto_id'],
+                            'precio' => $producto['pcompra'],
+                        ]);
+                        HistorialPrecioVenta::create([
+                            'producto_id' => $producto['producto_id'],
+                            'precio' => $producto['pventa'],
+                            'comentario' => 'Por compra'
+                        ]);
+                        $productoModel->pventa = $producto['pventa'];
+                        $productoModel->pcompra = $producto['pcompra'];
+                        $productoModel->save();
+                    }
+
+                    foreach ($producto['lotes'] as $lote) {
+                        $loteDB = ProductoLotes::where('producto_id', $lote['producto_id'])
+                            ->where(function ($query) use ($lote) {
+                                if (isset($lote['lote'])) {
+                                    $query->where('lote', $lote['lote']);
+                                } else {
+                                    $query->whereNull('lote');
+                                }
+
+                                if (isset($lote['fecha_vencimiento'])) {
+                                    $query->whereDate('fecha_vencimiento', $lote['fecha_vencimiento']);
+                                } else {
+                                    $query->whereNull('fecha_vencimiento');
+                                }
+                            })
+                            ->first();
+
+                        if ($loteDB) {
+                            // Ya existe, actualiza cantidad
+                            $loteDB->cantidad += $lote['cantidad'];
+                            $loteDB->save();
+                        } else {
+                            // No existe, crea nuevo
+                            ProductoLotes::create([
+                                "producto_id" => $lote['producto_id'],
+                                "fecha_vencimiento" => $lote['fecha_vencimiento'] ?? null,
+                                "lote" => $lote['lote'] ?? null,
+                                "cantidad" => $lote['cantidad'],
+                            ]);
+                        }
+
+                        // Siempre actualizar el stock general del producto
+                        $productoModel->stock += $lote['cantidad'];
+                        $productoModel->save();
+                    }
+                }
+            }
+
+            foreach ($productosConsolidados as $item) {
+                // Buscar el registro que coincida con producto_id y bonificacion
+                $detalle = OrdenCompraDetails::where('orden_compra_id', $id)
+                    ->where('producto_id', $item['producto_id'])
+                    ->where('bonificacion', $item['bonificacion'])
+                    ->first();
+
+                if ($detalle) {
+                    if ($item['cantidad_total'] != $item['cantidad_reemplazo']) {
+                        if($detalle->cantidad == $detalle->cantidad_pendiente){
+                            $detalle->cantidad_reemplazo = $item['cantidad_reemplazo'];
+                        }
+                    }
+                    $detalle->cantidad_pendiente = $item['cantidad_pendiente'];
+                    $detalle->devolver = $item['guia_devolucion'] ? 1 : 0;
+                    if($item['cantidad_pendiente'] > 0 && !$item['guia_devolucion']){
+                        $nuevo_estado = 3;
+                    }
+                    //Si el producto no tiene cantidades pendiente se cambia el estado del movimiento a ingresado
+                    if($item['cantidad_pendiente'] == 0 || $item['guia_devolucion']){
+                        $detalle->state = 1;
+                    }
+                    $detalle->save();
+                }
+            }
+
+            $orden_compra = OrdenCompra::findOrFail($id);
+            $orden_compra->update([
+                'state' => $nuevo_estado,
+                'fecha_ingreso' => Carbon::now(),
+                'date_revision' => Carbon::now(),
+            ]);
+
+            if(count($productos_guia_devolucion) > 0){
+                $comprobante = TypeComprobante::where('codigo', 'GD')->with('serie')->first();
+
+                if ($comprobante && $comprobante->serie->count() > 0) {
+                    $serie = $comprobante->serie->where('state', 1)->first(); //Por el momento coge el primero debido a que solo hay un almacen
+
+                    if ($serie) {
+                        $guia_devolucion = GuiaDevolucion::create([
+                            'type_comp_serie_id' => $serie->id,
+                            'correlativo' => $serie->correlativo + 1,
+                            'proveedor_id' => $orden_compra->proveedor_id,
+                            'order_compra_id' => $orden_compra->id,
+                        ]);
+
+                        foreach ($productos_guia_devolucion as $p) {
+                            GuiaDevolucionDetail::create([
+                                'guia_devolucion_id' => $guia_devolucion->id,
+                                'producto_id' => $p['producto_id'],
+                                'unit_id' => 1,
+                                'cantidad' => $p['cantidad_pendiente'],
+                            ]);
+                        }
+
+                        // Actualizar el correlativo
+                        $serie->correlativo += 1;
+                        $serie->save();
+                    }
+                }
+            }
+            DB::commit();
+    
+            return response()->json([
+                'message' => 200,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 409,
+                'message_text' => 'Hubo un error al ingresar la mercaderia de la orden de compra'. $e->getMessage(),
+            ], 500);
+        }
     }
 }

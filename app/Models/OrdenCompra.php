@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
+use App\Models\OrdenCompraAtributtes\NDocumentoOrdenCompra;
 use App\Models\OrdenCompraAtributtes\OrdenCompraCuotas;
 use App\Models\OrdenCompraAtributtes\OrdenCompraDetails;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
@@ -88,5 +89,15 @@ class OrdenCompra extends Model implements Auditable
     public function detalles()
     {
         return $this->hasMany(OrdenCompraDetails::class, 'orden_compra_id');
+    }
+
+    public function comprobante()
+    {
+        return $this->hasMany(NDocumentoOrdenCompra::class, 'orden_compra_id');
+    }
+
+    public function guia_devolucion()
+    {
+        return $this->hasMany(GuiaDevolucion::class, 'order_compra_id');
     }
 }

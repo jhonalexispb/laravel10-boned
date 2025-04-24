@@ -23,6 +23,7 @@ class OrdenCompraDetails extends Model implements Auditable
         "producto_id",
         "unit_id",
         "cantidad",
+        "cantidad_pendiente",
         "p_compra",
         "total",
         "margen_ganancia",
