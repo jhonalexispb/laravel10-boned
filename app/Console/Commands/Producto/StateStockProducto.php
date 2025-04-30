@@ -27,33 +27,22 @@ class StateStockProducto extends Command
     public function handle()
     {
         $productos = Producto::where("state",1)->get();
-        foreach ($productos as $k => $v){
-            $stock_seguridad = $v->stock_seguridad;
-
-            $stock_total = 0;
-            $is_agotar = false;
-            foreach ($v->productoAlmacenes as $almacen) {
-                $stock_total += $almacen->stock;
-                if($almacen->stock <= $stock_seguridad){
-                    //por agotar
-                    $v->update([
-                        "state_stock" => 2
-                    ]);
-                    $is_agotar = true;
-                }
-            }
-            if($stock_total == 0){
-                //agotado
-                $v->update([
-                    "state_stock" => 3
-                ]);
+        foreach ($productos as $producto) {
+            $nuevo_estado = $producto->state_stock;
+    
+            if ($producto->stock === 0) {
+                $nuevo_estado = 3;
+            } elseif ($producto->stock > $producto->stock_seguridad) {
+                $nuevo_estado = 1;
             } else {
-                if($is_agotar){
-                    //disponible
-                    $v->update([
-                        "state_stock" => 1
-                    ]);
-                }
+                $nuevo_estado = 2;
+            }
+    
+            // Solo actualiza si el estado ha cambiado
+            if ($producto->state_stock !== $nuevo_estado) {
+                $producto->update([
+                    'state_stock' => $nuevo_estado
+                ]);
             }
         }
     }

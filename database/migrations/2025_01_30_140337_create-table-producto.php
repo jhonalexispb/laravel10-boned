@@ -23,15 +23,15 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('descripcion')->nullable();
             $table->string('registro_sanitario')->nullable();
-            $table->decimal('pventa',10,1,true)->default(0);
-            $table->decimal('pcompra',10,1,true)->default(0);
+            $table->decimal('pventa',10,2,true)->default(0);
+            $table->decimal('pcompra',10,2,true)->default(0);
             $table->integer('stock')->default(0);
             $table->integer('stock_seguridad')->default(0);
             $table->string('imagen')->nullable();
             $table->string('imagen_public_id')->nullable();
             $table->unsignedBigInteger('linea_farmaceutica_id');
             $table->foreign('linea_farmaceutica_id')->references('id')->on('lineas_farmaceuticas')->onDelete('restrict');
-            $table->unsignedBigInteger('fabricante_id');
+            $table->unsignedBigInteger('fabricante_id')->nullable();
             $table->foreign('fabricante_id')->references('id')->on('fabricantes_producto')->onDelete('restrict');
             $table->boolean('sale_boleta')->default(0)->comment('1 sale en boleta y 0 no sale en boleta');
             $table->boolean('state')->default(1)->comment('1 es activo y 0 es inactivo');

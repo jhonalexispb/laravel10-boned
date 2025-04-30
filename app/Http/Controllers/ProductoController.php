@@ -71,7 +71,7 @@ class ProductoController extends Controller
             'categoria_id' => 'nullable|exists:categoria,id',
             'stock_seguridad' => 'required|numeric',
             'linea_farmaceutica_id' => 'required|exists:lineas_farmaceuticas,id',
-            'fabricante_id' => 'required|exists:fabricantes_producto,id',
+            'fabricante_id' => 'nullable|exists:fabricantes_producto,id',
             'sale_boleta' => 'required|boolean',
             /* 'maneja_lotes' => 'required|boolean', */
             'maneja_escalas' => 'required|boolean',

@@ -6,17 +6,17 @@ use App\Models\Producto;
 use App\Models\Traits\AuditableTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class HistorialPrecioCompra extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, \OwenIt\Auditing\Auditable, AuditableTrait;
+    use HasFactory, \OwenIt\Auditing\Auditable, AuditableTrait;
     protected $table = "producto_hist_p_compra";
     protected $fillable = [
         'producto_id',
         'precio',
         'created_by',
+        'order_compra_id'
     ];
 
     public function producto(){

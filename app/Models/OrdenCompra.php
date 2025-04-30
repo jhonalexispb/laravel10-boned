@@ -8,6 +8,7 @@ use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
 use App\Models\OrdenCompraAtributtes\NDocumentoOrdenCompra;
 use App\Models\OrdenCompraAtributtes\OrdenCompraCuotas;
 use App\Models\OrdenCompraAtributtes\OrdenCompraDetails;
+use App\Models\OrdenCompraAtributtes\OrderCompraDetailsGestionado;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -89,6 +90,11 @@ class OrdenCompra extends Model implements Auditable
     public function detalles()
     {
         return $this->hasMany(OrdenCompraDetails::class, 'orden_compra_id');
+    }
+
+    public function detalles_gestionados()
+    {
+        return $this->hasMany(OrderCompraDetailsGestionado::class, 'orden_compra_id');
     }
 
     public function comprobante()

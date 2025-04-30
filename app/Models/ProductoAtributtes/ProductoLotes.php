@@ -20,6 +20,7 @@ class ProductoLotes extends Model
         "fecha_vencimiento",
         "lote",
         "cantidad",
+        "cantidad_vendedor",
         "state",
     ];
 

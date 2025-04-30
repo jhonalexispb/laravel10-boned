@@ -32,6 +32,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('ordenes_compra_n_comprobantes', function (Blueprint $table) {
+            $table->dropForeign('ordenes_compra_n_comprobantes_type_comprobante_compra_id_foreign');
             $table->dropColumn('type_comprobante_compra_id');
             $table->dropColumn('fecha_emision');
             $table->dropColumn('comentario');

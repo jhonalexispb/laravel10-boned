@@ -24,8 +24,10 @@ class NDocumentoOrdenCompra extends Model implements Auditable
         "importe",
         "igv",
         "total",
+        "monto_real",
         "state",
         "fecha_emision",
+        "fecha_vencimiento",
         "comentario",
         "created_by",
         "updated_by",
@@ -37,5 +39,10 @@ class NDocumentoOrdenCompra extends Model implements Auditable
 
     public function order_compra(){
         return $this->belongsTo(OrdenCompra::class, "orden_compra_id");
+    }
+
+    public function detalleGestionado()
+    {
+        return $this->hasMany(OrderCompraDetailsGestionado::class, 'oc_n_comprob_id');
     }
 }

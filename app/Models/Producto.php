@@ -42,6 +42,7 @@ class Producto extends Model
         "pventa",
         "pcompra",
         "stock",
+        "stock_vendedor",
         "stock_seguridad",
         "imagen",
         "imagen_public_id",
@@ -54,6 +55,7 @@ class Producto extends Model
         "promocionable",
         "state",
         "state_stock",
+        "state_stock_vendedor",
     ];
 
     public function getActivitylogOptions(): LogOptions

@@ -36,6 +36,7 @@ class ProveedorController extends Controller
 
                 return [
                     "id" => $proveedor->id,
+                    "ruc" => $proveedor->ruc,
                     "razonSocial" => $proveedor->razonSocial,
                     "name" => $proveedor->name,
                     "address" => $proveedor->address,
@@ -58,7 +59,7 @@ class ProveedorController extends Controller
     public function store(Request $request)
     {
         $PROVEEDOR_EXIST = Proveedor::withTrashed()
-                            ->where('name',$request->name)
+                            ->where('ruc',$request->ruc)
                             ->first();
         if($PROVEEDOR_EXIST){
             if ($PROVEEDOR_EXIST->deleted_at) {
@@ -90,7 +91,9 @@ class ProveedorController extends Controller
             "proveedor" => [
                 "id" => $proveedor->id,
                 "razonSocial" => $proveedor->razonSocial,
+                "ruc" => $proveedor->ruc,
                 "name" => $proveedor->name,
+                "name_complete" => $proveedor->ruc.' '.$proveedor->name,
                 "address" => $proveedor->address,
                 "state" => $proveedor->state ?? 1,
                 "iddistrito" => $proveedor->iddistrito,
@@ -118,7 +121,7 @@ class ProveedorController extends Controller
     public function update(Request $request, string $id)
     {
         $PROVEEDOR_EXIST = Proveedor::withTrashed()
-                            ->where('name',$request->name)
+                            ->where('ruc',$request->ruc)
                             ->where('id','<>', $id)
                             ->first();
         if($PROVEEDOR_EXIST){
@@ -152,6 +155,7 @@ class ProveedorController extends Controller
             "proveedor" => [
                 "id" => $proveedor->id,
                 "razonSocial" => $proveedor->razonSocial,
+                "ruc" => $proveedor->ruc,
                 "name" => $proveedor->name,
                 "address" => $proveedor->address,
                 "state" => $proveedor->state,
@@ -161,7 +165,7 @@ class ProveedorController extends Controller
                 "ubicacion" => $ubicacionCompleta,
                 "idrepresentante" => $proveedor->idrepresentante,
                 "representante" => $proveedor->idrepresentante ? $proveedor->representante->name : 'Sin representante',
-                "representante_celular" => $proveedor->representante->celular,
+                "representante_celular" => $proveedor->representante?->celular,
             ]
         ]);
     }
@@ -201,6 +205,7 @@ class ProveedorController extends Controller
                 "message_text" => "el proveedor ".$proveedor->name." fue restaurada de manera satisfactoria",
                 "proveedor_restaurado" => [
                     "id" => $proveedor->id,
+                    "ruc" => $proveedor->ruc,
                     "razonSocial" => $proveedor->razonSocial,
                     "name" => $proveedor->name,
                     "address" => $proveedor->address,

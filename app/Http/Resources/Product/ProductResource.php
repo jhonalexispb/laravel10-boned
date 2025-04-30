@@ -40,7 +40,7 @@ class ProductResource extends JsonResource
             "linea_farmaceutica_id" => $this->resource->linea_farmaceutica_id,
             "linea_farmaceutica" => $this->resource->get_lineaFarmaceutica->nombre,
             "fabricante_id" => $this->resource->fabricante_id,
-            "fabricante" => $this->resource->get_fabricante->nombre,
+            "fabricante" => $this->resource->get_fabricante?->nombre,
             "presentacion_id" => $this->resource->presentacion_id,
             "afectacion_igv_id" => $this->resource->afectacion_igv_id,
             /* "presentacion" => $this->resource->get_presentacion->name ? $this->resource->get_presentacion->name : 'Sin presentación', */

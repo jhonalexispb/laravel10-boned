@@ -6,6 +6,7 @@ use App\Models\OrdenCompra;
 use App\Models\OrdenCompraAtributtes\NDocumentoOrdenCompra;
 use App\Models\Producto;
 use App\Models\ProductoAtributtes\Afectacion_igv;
+use App\Models\ProductoAtributtes\ProductoLotes;
 use App\Models\ProductoAtributtes\Unidad;
 use App\Models\Traits\AuditableTrait;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -21,6 +22,7 @@ class OrderCompraDetailsGestionado extends Model implements Auditable
     protected $fillable = [
         "orden_compra_id",
         "oc_n_comprob_id",
+        "prod_lote_rel_id",
         "afectacion_id",
         "unit_id",
         "producto_id",
@@ -51,5 +53,9 @@ class OrderCompraDetailsGestionado extends Model implements Auditable
 
     public function unit(){
         return $this->belongsTo(Unidad::class, "unit_id");
+    }
+
+    public function lote(){
+        return $this->belongsTo(ProductoLotes::class, "prod_lote_rel_id");
     }
 }
