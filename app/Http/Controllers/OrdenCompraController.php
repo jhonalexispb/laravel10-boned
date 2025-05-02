@@ -138,8 +138,6 @@ class OrdenCompraController extends Controller
                                         'get_escalas:id,producto_id,cantidad,precio,state',
                                         'get_lotes',
                                         'get_laboratorio', 
-                                        'get_lineaFarmaceutica',
-                                        'get_fabricante',
                                         'get_presentacion',
                                         'get_principios_activos'
                                     ])
@@ -147,7 +145,6 @@ class OrdenCompraController extends Controller
                 return [
                     "id" => $p->id,
                     "sku" => $p->sku,
-                    "tproducto" => $p->tproducto,
                     "laboratorio" => $p->get_laboratorio->name,
                     "laboratorio_id" => $p->laboratorio_id,
                     "color_laboratorio" => $p->get_laboratorio->color,
@@ -157,14 +154,16 @@ class OrdenCompraController extends Controller
                     "pventa" => $p->pventa ?? '0.0',
                     "stock" => $p->stock ?? '0',
                     "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
+                    "state_stock" => $p->state_stock ?? 3,
+                    "escalas" => $p->get_escalas,
+                    "maneja_escalas" => $p->maneja_escalas,
+                    "lotes" => $p->get_lotes,
+
+                    /* "tproducto" => $p->tproducto,
                     "linea_farmaceutica" => $p->get_lineaFarmaceutica->nombre,
                     "fabricante" => $p->get_fabricante?->nombre,
                     "presentacion" => $p->presentacion_id ? $p->get_presentacion->name : 'Sin presentación',
-                    "principios_activos" => $p->get_principios_activos->pluck('id')->toArray(),
-                    "maneja_escalas" => $p->maneja_escalas,
-                    "escalas" => $p->get_escalas,
-                    "lotes" => $p->get_lotes,
-                    "state_stock" => $p->state_stock ?? 3,
+                    "principios_activos" => $p->get_principios_activos->pluck('id')->toArray(),*/
                 ];
             })
         ]);
