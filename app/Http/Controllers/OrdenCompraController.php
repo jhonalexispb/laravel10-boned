@@ -534,7 +534,7 @@ class OrdenCompraController extends Controller
                 "id" => $ordenCompra->id,
                 "codigo" => $ordenCompra->codigo,
                 "descripcion" => $ordenCompra->descripcion,
-                "fecha_ingreso" => $ordenCompra->fecha_ingreso,
+                "fecha_ingreso" => $ordenCompra->fecha_ingreso ? Carbon::parse($ordenCompra->fecha_ingreso)->format('Y-m-d') : null,
                 "forma_pago_id" => $ordenCompra->forma_pago_id,
                 "igv" => $ordenCompra->igv_state,
                 "impuesto" => $ordenCompra->igv,
