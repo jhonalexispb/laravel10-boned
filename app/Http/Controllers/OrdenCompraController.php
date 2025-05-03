@@ -19,6 +19,7 @@ use App\Models\ProductoAtributtes\Afectacion_igv;
 use App\Models\ProductoAtributtes\HistorialPrecioCompra;
 use App\Models\ProductoAtributtes\HistorialPrecioVenta;
 use App\Models\ProductoAtributtes\ProductoLotes;
+use Barryvdh\DomPDF\Facade\PDF;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,8 +29,7 @@ use Validator;
 
 class OrdenCompraController extends Controller
 {
-    public function getRecursosParaCrear()
-    {   
+    public function getRecursosParaCrear(){   
         $codigo = OrdenCompra::generarCodigo();
         if (!$codigo) {
             return response()->json(['error' => 'Código no generado'], 422);
@@ -81,8 +81,7 @@ class OrdenCompraController extends Controller
         ]);
     }
 
-    public function getRecursosParaEditar()
-    {   
+    public function getRecursosParaEditar(){   
         return response()->json([
             "proveedores" => Proveedor::where('state', 1)
             ->with([
@@ -169,8 +168,7 @@ class OrdenCompraController extends Controller
         ]);
     }  
     
-    public function getProductDetail(String $id)
-    {
+    public function getProductDetail(String $id){
         $producto = Producto::with([
             'get_lotes' => function ($query) {
                 $query->where('cantidad', '>', 0)
@@ -1164,5 +1162,11 @@ class OrdenCompraController extends Controller
                 'message_text' => 'Hubo un error al ingresar la mercaderia de la orden de compra'. $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function orden_compra_pdf($id){
+        $orden = OrdenCompra::findOrFail($id);
+        $pdf = PDF::loadView('orden_compra.orden_compra_pdf',compact('orden'));
+        return $pdf->stream("ORDEN_COMPRA_".$orden->codigo.'-'.uniqid().'.pdf');
     }
 }

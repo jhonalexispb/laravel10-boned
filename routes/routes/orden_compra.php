@@ -25,3 +25,5 @@ Route::group([
     Route::put('/orden_compra/estado/{id}', [OrdenCompraController::class, 'change_state']);
     Route::resource("orden_compra",OrdenCompraController::class)->except(['create','edit']);
 });
+
+Route::get('/orden_compra/pdf/{id}',[OrdenCompraController::class, 'orden_compra_pdf']);
