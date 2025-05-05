@@ -3,10 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Configuration\Proveedor;
-use App\Models\Configuration\TypeComprobante;
-use App\Models\Configuration\TypeComprobanteSerie;
-use App\Models\GuiaDevolucion;
-use App\Models\GuiaDevolucionAtributtes\GuiaDevolucionDetail;
 use App\Models\OrdenCompra;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
 use App\Models\OrdenCompraAtributtes\NDocumentoOrdenCompra;
@@ -1090,21 +1086,7 @@ class OrdenCompraController extends Controller
                         $productoModel->stock += $lote['cantidad'];
                         $productoModel->stock_vendedor += $lote['cantidad'];
 
-                        if ($productoModel->stock == 0) {
-                            $productoModel->state_stock = 3; // Sin stock
-                        } elseif ($productoModel->stock <= $productoModel->stock_seguridad) {
-                            $productoModel->state_stock = 2; // Stock en nivel de seguridad
-                        } elseif ($productoModel->stock > $productoModel->stock_minimo) {
-                            $productoModel->state_stock = 1; // Stock suficiente
-                        }
-
-                        if ($productoModel->stock_vendedor == 0) {
-                            $productoModel->state_stock_vendedor = 3; // Sin stock
-                        } elseif ($productoModel->stock_vendedor <= $productoModel->stock_seguridad) {
-                            $productoModel->state_stock_vendedor = 2; // Stock en nivel de seguridad
-                        } elseif ($productoModel->stock_vendedor > $productoModel->stock_minimo) {
-                            $productoModel->state_stock_vendedor = 1; // Stock suficiente
-                        }
+                        $productoModel->actualizarEstadosStock();
 
                         $productoModel->save();
                     }

@@ -59,46 +59,55 @@ class GuiasPrestamoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store()
+    public function store(Request $request)
     {
-        $codigo = GuiaPrestamo::generar_codigo();
+        $crearGuia = $request->input('crear_guia_prestamo', true); // por defecto true
 
-        if (!$codigo) {
-            return response()->json(['error' => 'Código no generado'], 422);
+        $guia_prestamo_id = null;
+        $codigo = null;
+        $movimientos = null;
+
+        if ($crearGuia) {
+            $codigo = GuiaPrestamo::generar_codigo();
+
+            if (!$codigo) {
+                return response()->json(['error' => 'Código no generado'], 422);
+            }
+
+            $guia_prestamo = GuiaPrestamo::create([
+                'codigo' => $codigo,
+            ]);
+
+            $guia_prestamo_id = $guia_prestamo->id;
+        } else {
+            $guia_prestamo_id = $request->input('guia_prestamo_id');
+            $guia = GuiaPrestamo::findOrFail($guia_prestamo_id);
+            $codigo = $guia->codigo;
+            $movimientos = $guia->detalles;
         }
 
-        $guia_prestamo = GuiaPrestamo::create([
-            'codigo' => $codigo,
-        ]);
-
         return response()->json([
-            'guia_prestamo_id' => $guia_prestamo->id,
-            'codigo' => $guia_prestamo->codigo,
-            "usuarios" => User::where('state', 1)
+            'guia_prestamo_id' => $guia_prestamo_id,
+            'codigo' => $codigo,
+            'usuarios' => User::where('state', 1)
                 ->get()
-                ->map(function ($p) {
-                    return [
-                        "id" => $p->id,
-                        "name" => $p->name,
-                        "name_complete" => $p->name.' '.$p->surname,
-                        "email" => $p->email,
-                    ];
-                }),
-
-            "laboratorios" => Laboratorio::where('state', 1)->get()->map(function ($p) {
-                return [
+                ->map(fn($p) => [
                     "id" => $p->id,
                     "name" => $p->name,
-                ];
-            }),
-
-            "productos" => Producto::where('state', 1)
-                                    ->where('stock','>',0)
-                                    ->with([
-                                        'get_laboratorio', 
-                                    ])
-                                    ->get()->map(function ($p) {
-                return [
+                    "name_complete" => $p->name . ' ' . $p->surname,
+                    "email" => $p->email,
+                ]),
+            'laboratorios' => Laboratorio::where('state', 1)
+                ->get()
+                ->map(fn($p) => [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                ]),
+            'productos' => Producto::where('state', 1)
+                ->where('stock_vendedor', '>', 0)
+                ->with('get_laboratorio')
+                ->get()
+                ->map(fn($p) => [
                     "id" => $p->id,
                     "sku" => $p->sku,
                     "laboratorio" => $p->get_laboratorio->name,
@@ -106,12 +115,27 @@ class GuiasPrestamoController extends Controller
                     "color_laboratorio" => $p->get_laboratorio->color,
                     "nombre" => $p->nombre,
                     "caracteristicas" => $p->caracteristicas,
-                    "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
+                    "nombre_completo" => $p->nombre . ' ' . $p->caracteristicas,
                     "pventa" => $p->pventa ?? '0.0',
-                    "stock" => $p->stock ?? '0',
+                    "stock" => $p->stock_vendedor ?? '0',
                     "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
-                ];
-            }),
+                ]),
+            'movimiento' => $movimientos?->map(function ($p) {
+                     return [
+                         "id" => $p->id,
+                         "producto_id" => $p->producto_id,
+                         "sku" => $p->producto->sku,
+                         "laboratorio" => $p->producto->get_laboratorio->name,
+                         "color_laboratorio" => $p->producto->get_laboratorio->color,
+                         "nombre" => $p->producto->nombre,
+                         "caracteristicas" => $p->producto->caracteristicas,
+                         "pventa" => $p->producto->pventa ?? '0.0',
+                         "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
+
+                         "lote" => ($p->lote->lote ?? 'SIN LOTE') . ' - ' . ($p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV'),
+                         "cantidad" => $p->cantidad,
+                     ];
+                 })
         ]);
     }
 

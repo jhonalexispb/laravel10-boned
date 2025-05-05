@@ -535,11 +535,11 @@
           </td>
         </tr>
         <tr>
-            <td style="text-transform: uppercase;">
+            <td style="text-transform: uppercase; text-align: left">
             CREADOR: <strong>{{$orden->creador->name}}</strong>
             </td>
             @if ($orden->creador->phone)
-            <td>
+            <td style="text-align: right;">
               CONTACTO: {{$orden->creador->phone}}
             </td>
             @endif
@@ -580,7 +580,9 @@
         <thead>
           <tr>
             <th>Modo de Pago</th>
+            @if ($orden->fecha_ingreso)
             <th>Fecha de llegada</th>
+            @endif
             <th>Información de Pago</th>
           </tr>
         </thead>
@@ -593,7 +595,11 @@
                     COMPROBANTE: <strong>{{$orden->getTypeComprobante->name}}</strong>
                 </div>
             </td>
-            <td class="large">20/10/2024</td>
+            @if ($orden->fecha_ingreso)
+            <td>
+              {{$orden->fecha_ingreso}}
+            </td>
+            @endif
 
             <td class="payment-info">
                 <div class="large total">

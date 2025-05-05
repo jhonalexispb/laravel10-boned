@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\GuiasPrestamoAtributtes;
 
 use App\Http\Controllers\Controller;
+use App\Models\GuiaPrestamo;
 use App\Models\GuiasPrestamoAtributtes\GuiaPrestamoDetalle;
 use App\Models\Producto;
 use App\Models\ProductoAtributtes\ProductoLotes;
@@ -30,7 +31,7 @@ class GuiasPrestamoMovimientosController extends Controller
              'guia_prestamo_id' => 'required|exists:guias_prestamo,id',
              'producto_id' => 'required|exists:productos,id',
              'cantidad' => 'required|integer|min:1',
-             'lote_id' => 'nullable|exists:producto_lotes,id',
+             'lote_id' => 'nullable|exists:producto_lote_relation,id',
          ]);
      
          DB::beginTransaction();
@@ -45,7 +46,7 @@ class GuiasPrestamoMovimientosController extends Controller
                 ],422);
              }
      
-             $cantidadRestante = $request->cantidad;
+             $cantidadRestante = (int) $request->cantidad;
              $movimientos = [];
      
              if ($request->filled('lote_id')) {
@@ -73,6 +74,7 @@ class GuiasPrestamoMovimientosController extends Controller
                  ]);
      
                  $lote->cantidad_vendedor -= $cantidadRestante;
+                 $lote->cantidad -= $cantidadRestante;
                  $lote->save();
              } else {
                  // Buscar lotes ordenados por: fecha_vencimiento asc, created_at asc, y los NULL al final
@@ -101,6 +103,7 @@ class GuiasPrestamoMovimientosController extends Controller
                      ]);
      
                      $lote->cantidad_vendedor -= $extraer;
+                     $lote->cantidad -= $extraer;
                      $lote->save();
      
                      $cantidadRestante -= $extraer;
@@ -116,36 +119,36 @@ class GuiasPrestamoMovimientosController extends Controller
              }
      
              $producto->stock_vendedor -= $request->cantidad;
+             $producto->stock -= $request->cantidad;
              $producto->save();
+
+             //actualizamos el estado de la guia, de "en proceso de creacion" a "pendiente"
+             GuiaPrestamo::where('id', $request->guia_prestamo_id)->update(['state' => 1]);
      
              DB::commit();
      
              // Opcional: cargar relaciones para devolver detalle
              $detalles = GuiaPrestamoDetalle::with(['producto.get_laboratorio', 'lote'])
-                        ->where('guia_prestamo_id', $request->guia_prestamo_id)
-                        ->get();
+            ->whereIn('id', collect($movimientos)->pluck('id'))
+            ->get();
      
              return response()->json([
-                 'success' => true,
-                 'mensaje' => 'Movimiento registrado correctamente.',
-                 'movimientos' => $detalles->map(function ($p) {
-                     return [
-                         "id" => $p->id,
-                         "sku" => $p->producto->sku,
-                         "laboratorio" => $p->producto->get_laboratorio->name,
-                         "laboratorio_id" => $p->producto->laboratorio_id,
-                         "color_laboratorio" => $p->producto->get_laboratorio->color,
-                         "nombre" => $p->producto->nombre,
-                         "caracteristicas" => $p->producto->caracteristicas,
-                         "nombre_completo" => $p->producto->nombre . ' ' . $p->producto->caracteristicas,
-                         "pventa" => $p->producto->pventa ?? '0.0',
-                         "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
-
-                         "lote" => ($p->lote->lote ?? 'SIN LOTE') . ' - ' . ($p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FECHA DE VENCIMIENTO'),
-                         "cantidad" => $p->cantidad,
-                     ];
-                 })
-             ]);
+                'movimiento' => $detalles->map(function ($p) {
+                    return [
+                        "id" => $p->id,
+                        "producto_id" => $p->producto_id,
+                        "sku" => $p->producto->sku,
+                        "laboratorio" => $p->producto->get_laboratorio->name,
+                        "color_laboratorio" => $p->producto->get_laboratorio->color,
+                        "nombre" => $p->producto->nombre,
+                        "caracteristicas" => $p->producto->caracteristicas,
+                        "pventa" => $p->producto->pventa ?? '0.0',
+                        "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
+                        "lote" => ($p->lote->lote ?? 'SIN LOTE') . ' - ' . ($p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV'),
+                        "cantidad" => $p->cantidad,
+                    ];
+                })
+            ]);
      
          } catch (\Exception $e) {
              DB::rollBack();
@@ -175,8 +178,45 @@ class GuiasPrestamoMovimientosController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        DB::beginTransaction();
+        try {
+            $movimiento = GuiaPrestamoDetalle::findOrFail($id);
+
+            $producto = Producto::findOrFail($movimiento->producto_id);
+            $producto->stock += $movimiento->cantidad;
+            $producto->stock_vendedor += $movimiento->cantidad;
+
+            $producto->actualizarEstadosStock();
+            $producto->save();
+
+            $lote = ProductoLotes::findOrFail($movimiento->lote_id);
+            $lote->cantidad += $movimiento->cantidad;
+            $lote->cantidad_vendedor += $movimiento->cantidad;
+            $lote->save();
+
+            // Guardamos la guía antes de eliminar el detalle
+            $guia = $movimiento->guia_prestamo;
+
+            // Eliminamos (soft delete)
+            $movimiento->delete();
+
+            // Ahora actualizamos el estado
+            $guia->actualizarEstadoPorDetalles();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Movimiento eliminado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Ocurrió un error inesperado.',
+                'mensaje' => $e->getMessage()
+            ], 500);
+        }
     }
 }

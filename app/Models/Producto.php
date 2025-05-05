@@ -189,6 +189,31 @@ class Producto extends Model
         return $this->belongsTo(Afectacion_igv::class, 'afectacion_igv_id');
     }
 
+    //metodos para uso
+
+    public function actualizarEstadosStock(): void
+    {
+        // Estado stock general
+        if ($this->stock == 0) {
+            $this->state_stock = 3; // Sin stock
+        } elseif ($this->stock <= $this->stock_seguridad) {
+            $this->state_stock = 2; // Stock en nivel de seguridad
+        } elseif ($this->stock > $this->stock_minimo) {
+            $this->state_stock = 1; // Stock suficiente
+        }
+
+        // Estado stock vendedor
+        if ($this->stock_vendedor == 0) {
+            $this->state_stock_vendedor = 3; // Sin stock
+        } elseif ($this->stock_vendedor <= $this->stock_seguridad) {
+            $this->state_stock_vendedor = 2; // Stock en nivel de seguridad
+        } elseif ($this->stock_vendedor > $this->stock_minimo) {
+            $this->state_stock_vendedor = 1; // Stock suficiente
+        }
+    }
+
+    
+
 
 
 

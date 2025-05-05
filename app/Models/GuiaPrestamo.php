@@ -64,4 +64,12 @@ class GuiaPrestamo extends Model implements Auditable
     {
         return $this->hasMany(GuiaPrestamoDetalle::class, 'guia_prestamo_id');
     }
+
+    public function actualizarEstadoPorDetalles()
+    {
+        $tieneMovimientos = $this->detalles()->exists(); // Verifica si hay detalles relacionados
+
+        $this->state = $tieneMovimientos ? 1 : 0; // 1: Pendiente, 0: En creación
+        $this->save();
+    }
 }

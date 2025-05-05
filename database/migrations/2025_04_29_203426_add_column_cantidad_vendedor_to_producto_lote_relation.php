@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('producto_lote_relation', function (Blueprint $table) {
-            $table->string('cantidad_vendedor')->after('cantidad');
+            $table->string('cantidad_vendedor')->default(0)->after('cantidad');
         });
     }
 

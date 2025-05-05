@@ -35,6 +35,7 @@ class ProductResource extends JsonResource
             "pventa" => $this->resource->pventa ?? '0.0',
             "pcompra" => $this->resource->pcompra ?? '0.0',
             "stock" => $this->resource->stock ?? '0',
+            "stock_vendedor" => $this->resource->stock_vendedor ?? '0',
             "stock_seguridad" => $this->resource->stock_seguridad ?? '10',
             "imagen" => $this->resource->imagen ?? env("IMAGE_DEFAULT"),
             "linea_farmaceutica_id" => $this->resource->linea_farmaceutica_id,
