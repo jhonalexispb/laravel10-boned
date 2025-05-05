@@ -30,7 +30,8 @@ class GuiasPrestamoController extends Controller
                     "codigo" => $b->codigo,
                     "state" => $b->state,
                     "comentario" => $b->comentario,
-                    "created_by" => $b->user_encargado->name,
+                    "encargado" => $b->user_encargado?->name,
+                    "created_by" => $b->creador?->name,
                     "fecha_entrega" => $b->fecha_entrega?->format("Y-m-d h:i A"),
                     "fecha_gestionado" => $b->fecha_gestionado?->format("Y-m-d h:i A"),
                     "fecha_revisado" => $b->fecha_revisado?->format("Y-m-d h:i A"),
@@ -58,9 +59,60 @@ class GuiasPrestamoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store()
     {
-        //
+        $codigo = GuiaPrestamo::generar_codigo();
+
+        if (!$codigo) {
+            return response()->json(['error' => 'Código no generado'], 422);
+        }
+
+        $guia_prestamo = GuiaPrestamo::create([
+            'codigo' => $codigo,
+        ]);
+
+        return response()->json([
+            'guia_prestamo_id' => $guia_prestamo->id,
+            'codigo' => $guia_prestamo->codigo,
+            "usuarios" => User::where('state', 1)
+                ->get()
+                ->map(function ($p) {
+                    return [
+                        "id" => $p->id,
+                        "name" => $p->name,
+                        "name_complete" => $p->name.' '.$p->surname,
+                        "email" => $p->email,
+                    ];
+                }),
+
+            "laboratorios" => Laboratorio::where('state', 1)->get()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                ];
+            }),
+
+            "productos" => Producto::where('state', 1)
+                                    ->where('stock','>',0)
+                                    ->with([
+                                        'get_laboratorio', 
+                                    ])
+                                    ->get()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "sku" => $p->sku,
+                    "laboratorio" => $p->get_laboratorio->name,
+                    "laboratorio_id" => $p->laboratorio_id,
+                    "color_laboratorio" => $p->get_laboratorio->color,
+                    "nombre" => $p->nombre,
+                    "caracteristicas" => $p->caracteristicas,
+                    "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
+                    "pventa" => $p->pventa ?? '0.0',
+                    "stock" => $p->stock ?? '0',
+                    "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
+                ];
+            }),
+        ]);
     }
 
     /**
@@ -87,59 +139,6 @@ class GuiasPrestamoController extends Controller
         //
     }
 
-    public function getRecursosParaCrear()
-    {   
-        $codigo = GuiaPrestamo::generar_codigo();
-        if (!$codigo) {
-            return response()->json(['error' => 'Código no generado'], 422);
-        }
-
-        return response()->json([
-            "codigo" => $codigo,
-            "usuarios" => User::where('state', 1)
-                ->get()
-                ->map(function ($p) {
-                    return [
-                        "id" => $p->id,
-                        "name" => $p->name,
-                        "name_complete" => $p->name.' '.$p->surname,
-                        "email" => $p->email,
-                    ];
-                }),
-
-            "laboratorios" => Laboratorio::where('state', 1)->get()->map(function ($p) {
-                return [
-                    "id" => $p->id,
-                    "name" => $p->name,
-                ];
-            }),
-
-            "productos" => Producto::where('state', 1)
-                                    ->where('stock','>',0)
-                                    ->with([
-                                        'get_lotes',
-                                        'get_laboratorio', 
-                                    ])
-                                    ->get()->map(function ($p) {
-                return [
-                    "id" => $p->id,
-                    "sku" => $p->sku,
-                    "laboratorio" => $p->get_laboratorio->name,
-                    "laboratorio_id" => $p->laboratorio_id,
-                    "color_laboratorio" => $p->get_laboratorio->color,
-                    "nombre" => $p->nombre,
-                    "caracteristicas" => $p->caracteristicas,
-                    "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
-                    "pventa" => $p->pventa ?? '0.0',
-                    "stock" => $p->stock ?? '0',
-                    "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
-                    "state_stock" => $p->state_stock ?? 3,
-                    "lotes" => $p->get_lotes,
-                ];
-            }),
-        ]);
-    }
-
     public function getProductosByLaboratorio(Request $request){
         $request->validate([
             'laboratorio_id' => 'nullable|array',
@@ -157,6 +156,7 @@ class GuiasPrestamoController extends Controller
                                         'get_lotes',
                                         'get_laboratorio', 
                                     ])
+                                    ->where('state',1)
                                     ->get()->map(function ($p) {
                 return [
                     "id" => $p->id,
@@ -168,10 +168,8 @@ class GuiasPrestamoController extends Controller
                     "caracteristicas" => $p->caracteristicas,
                     "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
                     "pventa" => $p->pventa ?? '0.0',
-                    "stock" => $p->stock ?? '0',
+                    "stock" => $p->stock_vendedor ?? '0',
                     "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
-                    "state_stock" => $p->state_stock ?? 3,
-                    "lotes" => $p->get_lotes,
                 ];
             })
         ]);
@@ -182,9 +180,9 @@ class GuiasPrestamoController extends Controller
         $producto = Producto::with([
             'get_lotes' => function ($query) {
                 $query->where('state', 1)
-                    ->where('cantidad', '>', 0)
+                    ->where('cantidad_vendedor', '>', 0)
                     ->orderBy('fecha_vencimiento', 'asc')
-                    ->select('id', 'producto_id', 'lote', 'cantidad', 'fecha_vencimiento');
+                    ->select('id', 'producto_id', 'lote', 'cantidad_vendedor', 'fecha_vencimiento');
             },
         ])->where('id', $id)->first();
 
@@ -197,7 +195,7 @@ class GuiasPrestamoController extends Controller
         $lotes = $producto->get_lotes; // Ya están filtrados por el with()
 
         return response()->json([
-            "stock" => $producto->stock,
+            "stock" => $producto->stock_vendedor,
             "pventa" => $producto->pventa,
             "lotes" => $lotes->map(function ($b) use ($hoy) {
                 $fechaVencimiento = Carbon::parse($b->fecha_vencimiento);
@@ -206,7 +204,8 @@ class GuiasPrestamoController extends Controller
                     "id" => $b->id,
                     "dias_faltantes" => $dias_faltantes,
                     "lote" => ($b->lote ?? 'SIN LOTE') . ' - ' . ($b->fecha_vencimiento ? Carbon::parse($b->fecha_vencimiento)->format("d-m-Y") : 'SIN FECHA DE VENCIMIENTO'),
-                    "cantidad" => $b->cantidad
+                    "cantidad" => $b->cantidad_vendedor,
+                    "fecha_vencimiento_null" => $b->fecha_vencimiento ? false : true
                 ];
             }),
         ]);

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('guias_prestamo', function (Blueprint $table) {
             $table->id();
             $table->string('codigo')->unique();
-            $table->unsignedBigInteger('user_encargado_id');
+            $table->unsignedBigInteger('user_encargado_id')->nullable();
             $table->foreign('user_encargado_id')
                 ->references('id')
                 ->on('users')
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->dateTime('fecha_revisado')->nullable()->comment('fecha en la que se reviso que todo este conforme, mas que todo las ventas y los pagos');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->unsignedTinyInteger('state')->default(0)->comment('0 es pendiente, 1 es entregado, 2 es gestionado y 3 es revisado');
+            $table->unsignedTinyInteger('state')->default(0)->comment('0 es proceso de creacion, 1 es pendiente, 2 es entregado, 3 es en proceso de venta, 4 es gestionado y 5 es revisado');
             $table->timestamps();
             $table->softDeletes();
         });

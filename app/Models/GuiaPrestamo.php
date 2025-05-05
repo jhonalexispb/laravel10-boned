@@ -56,6 +56,10 @@ class GuiaPrestamo extends Model implements Auditable
         return $this->belongsTo(User::class, "user_encargado_id");
     }
 
+    public function creador(){
+        return $this->belongsTo(User::class, "created_by");
+    }
+
     public function detalles()
     {
         return $this->hasMany(GuiaPrestamoDetalle::class, 'guia_prestamo_id');
