@@ -135,7 +135,7 @@ class GuiasPrestamoController extends Controller
                          "lote" => ($p->lote->lote ?? 'SIN LOTE') . ' - ' . ($p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV'),
                          "cantidad" => $p->cantidad,
                      ];
-                 })
+                 }) ?? collect(),
         ]);
     }
 
@@ -152,7 +152,38 @@ class GuiasPrestamoController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $request->validate([
+            'user_encargado_id' => 'required|exists:users,id',
+            'comentario' => 'nullable|string',
+        ]);
+
+        try {
+            $guia_exist = GuiaPrestamo::where('user_encargado_id',$request->user_encargado_id)
+                            ->where('state','<>',5)
+                            ->exists();
+
+            if($guia_exist){
+                return response() -> json([
+                    "message" => 403,
+                    "message_text" => "el usuario encargado ya tiene una guia de prestamo asignada"
+                ],422);
+            }
+
+            $guia_prestamo = GuiaPrestamo::findOrFail($id);
+            $guia_prestamo->user_encargado_id = $request->user_encargado_id;
+            $guia_prestamo->comentario = $request->comentario;
+            $guia_prestamo->save();
+    
+            return response()->json([
+                'message' => '200'
+            ], 200);
+    
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al actualizar',
+                'mensaje' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

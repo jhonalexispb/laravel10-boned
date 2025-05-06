@@ -9,6 +9,6 @@ Route::group([
     //'middleware' => ['auth:api','permission:publish articles|edit articles'],
 
 ], function () {
-    Route::apiResource('atributtes/guias_prestamo', GuiasPrestamoMovimientosController::class)
+    Route::apiResource('atributtes/guias_prestamo/detalle', GuiasPrestamoMovimientosController::class)
     ->except('show');
 });
