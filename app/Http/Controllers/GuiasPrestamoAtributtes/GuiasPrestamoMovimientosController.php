@@ -203,7 +203,7 @@ class GuiasPrestamoMovimientosController extends Controller
                     $lote->cantidad < $diferencia || $lote->cantidad_vendedor < $diferencia) {
                     return response() -> json([
                         "message" => 403,
-                        "message_text" => "Stock insuficiente para aumentar la cantidad solicitada."
+                        "message_text" => "no hay stock suficiente en el lote, solo hay ".$lote->cantidad_vendedor,
                     ],422);
                 }
             
