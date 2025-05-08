@@ -36,6 +36,9 @@ class GuiasPrestamoController extends Controller
                     "fecha_gestionado" => $b->fecha_gestionado?->format("Y-m-d h:i A"),
                     "fecha_revisado" => $b->fecha_revisado?->format("Y-m-d h:i A"),
                     "created_at" => $b->created_at->format("Y-m-d h:i A"),
+                    "monto_total" => number_format($b->detalles?->sum(function($detalle){
+                        return $detalle->cantidad * $detalle->producto->pventa;
+                    }) ?? 0, 2),
                     'mercaderia' => $b->detalles?->map(function($p){
                         return [
                             "id" => $p->id,

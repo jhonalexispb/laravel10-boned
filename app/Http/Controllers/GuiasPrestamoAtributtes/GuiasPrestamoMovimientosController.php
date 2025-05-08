@@ -199,12 +199,16 @@ class GuiasPrestamoMovimientosController extends Controller
                 $lote = ProductoLotes::findOrFail($movimiento->lote_id);
             
                 // Verificar si hay suficiente stock
-                if ($producto->stock < $diferencia || $producto->stock_vendedor < $diferencia ||
-                    $lote->cantidad < $diferencia || $lote->cantidad_vendedor < $diferencia) {
-                    return response() -> json([
+                if (
+                    $producto->stock < $diferencia || $producto->stock_vendedor < $diferencia ||
+                    $lote->cantidad < $diferencia || $lote->cantidad_vendedor < $diferencia
+                ) {
+                    return response()->json([
                         "message" => 403,
-                        "message_text" => "no hay stock suficiente en el lote, solo hay ".$lote->cantidad_vendedor,
-                    ],422);
+                        "message_text" => $lote->cantidad_vendedor <= 0
+                            ? "No hay stock suficiente en el lote"
+                            : "No hay stock suficiente en el lote, solo puedes aumentar hasta " . $lote->cantidad_vendedor,
+                    ], 422);
                 }
             
                 // Si hay suficiente stock, se descuenta
