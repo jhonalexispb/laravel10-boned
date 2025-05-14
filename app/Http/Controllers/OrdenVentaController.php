@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClientesSucursales;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
@@ -201,4 +202,91 @@ class OrdenVentaController extends Controller
             }),
         ]);
     } 
+
+
+
+
+
+    public function store(Request $request)
+    {
+        $crearOrdenVenta = $request->input('crear_orden_venta', true); // por defecto true
+        $userId = auth()->id();
+        $orden_venta_id = null;
+        $codigo = null;
+        $movimientos = null;
+        $cliente = null;
+
+        if ($crearOrdenVenta) {
+            $codigo = OrdenVenta::generar_codigo($userId);
+
+            if (!$codigo) {
+                return response()->json(['error' => 'Código no generado'], 422);
+            }
+
+            $guia_prestamo = OrdenVenta::create([
+                'codigo' => $codigo,
+            ]);
+
+            $orden_venta_id = $guia_prestamo->id;
+        } else {
+            $orden_venta_id = $request->input('orden_venta_id');
+            $orden_venta = OrdenVenta::findOrFail($orden_venta_id);
+            $codigo = $orden_venta->codigo;
+            $movimientos = $orden_venta->detalles;
+            $cliente = $orden_venta->cliente_id;
+        }
+
+        return response()->json([
+            'orden_venta_id' => $orden_venta_id,
+            'codigo' => $codigo,
+            'encargado_id' => $cliente,
+            'clientes' => ClientesSucursales::where('state', 1)
+                ->get()
+                ->map(fn($p) => [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                    "name_complete" => $p->name . ' ' . $p->surname,
+                    "email" => $p->email,
+                ]),
+            'laboratorios' => Laboratorio::where('state', 1)
+                ->get()
+                ->map(fn($p) => [
+                    "id" => $p->id,
+                    "name" => $p->name,
+                ]),
+            'productos' => Producto::where('state', 1)
+                ->where('stock_vendedor', '>', 0)
+                ->with('get_laboratorio')
+                ->get()
+                ->map(fn($p) => [
+                    "id" => $p->id,
+                    "sku" => $p->sku,
+                    "laboratorio" => $p->get_laboratorio->name,
+                    "laboratorio_id" => $p->laboratorio_id,
+                    "color_laboratorio" => $p->get_laboratorio->color,
+                    "nombre" => $p->nombre,
+                    "caracteristicas" => $p->caracteristicas,
+                    "nombre_completo" => $p->nombre . ' ' . $p->caracteristicas,
+                    "pventa" => $p->pventa ?? '0.0',
+                    "stock" => $p->stock_vendedor ?? '0',
+                    "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
+                ]),
+            'movimiento' => $movimientos?->map(function ($p) {
+                     return [
+                         "id" => $p->id,
+                         "producto_id" => $p->producto_id,
+                         "sku" => $p->producto->sku,
+                         "laboratorio" => $p->producto->get_laboratorio->name,
+                         "color_laboratorio" => $p->producto->get_laboratorio->color,
+                         "nombre" => $p->producto->nombre,
+                         "caracteristicas" => $p->producto->caracteristicas,
+                         "pventa" => $p->producto->pventa ?? '0.0',
+                         "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
+
+                         "lote" => ($p->lote->lote ?? 'SIN LOTE') . ' - ' . ($p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV'),
+                         "cantidad" => $p->cantidad,
+                     ];
+                 }) ?? collect(),
+        ]);
+    }
 }
