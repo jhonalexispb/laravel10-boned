@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Configuration\Laboratorio;
+use App\Models\Configuration\Proveedor;
+use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
+use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use App\Models\OrdenVenta;
 use App\Models\Producto;
 use Illuminate\Http\Request;
@@ -11,7 +14,7 @@ class OrdenVentaController extends Controller
 {
     public function getRecursosParaCrear()
     {   
-        /* $userId = auth()->id();
+        $userId = auth()->id();
         $codigo = OrdenVenta::generarCodigo($userId);
         if (!$codigo) {
             return response()->json(['error' => 'Código no generado'], 422);
@@ -58,7 +61,7 @@ class OrdenVentaController extends Controller
                     "name" => $p->name,
                 ];
             }),
-        ]); */
+        ]);
     }
 
     public function getRecursosIniciales(){

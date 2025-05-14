@@ -8,6 +8,8 @@
             <th width="22">Linea farmaceutica</th>
             <th>SKU</th>
             <th width="12">Precio venta</th>
+            <th width="12">Stock</th>
+            <th width="12">Stock vendedor</th>
         </tr>
     </thead>
     <tbody>
@@ -20,6 +22,8 @@
             <td>{{ $v->get_lineaFarmaceutica->nombre }}</td>
             <td>{{ $v->sku }}</td>
             <td>{{ $v->pventa }}</td>
+            <td>{{ $v->stock }}</td>
+            <td>{{ $v->stock_vendedor }}</td>
         </tr>
         @endforeach
     </tbody>

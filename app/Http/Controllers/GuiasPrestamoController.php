@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\GuiaPrestamo\GuiaPrestamoCollection;
+use App\Http\Resources\GuiaPrestamo\GuiaPrestamoResource;
 use App\Models\Configuration\Laboratorio;
 use App\Models\GuiaPrestamo;
 use App\Models\Producto;
+use App\Models\ProductoAtributtes\ProductoLotes;
 use App\Models\User;
 use Carbon\Carbon;
+use DB;
 use Illuminate\Http\Request;
 
 class GuiasPrestamoController extends Controller
@@ -23,39 +27,8 @@ class GuiasPrestamoController extends Controller
                                 ->orderBy("id","desc")
                                 ->paginate(25);
         return response()->json([
-            "total" => $guias_prestamo->total(),
-            "guias_prestamo" => $guias_prestamo->map(function($b){
-                return [
-                    "id" => $b->id,
-                    "codigo" => $b->codigo,
-                    "state" => $b->state,
-                    "comentario" => $b->comentario,
-                    "encargado" => $b->user_encargado?->name,
-                    "created_by" => $b->creador?->name,
-                    "fecha_entrega" => $b->fecha_entrega?->format("Y-m-d h:i A"),
-                    "fecha_gestionado" => $b->fecha_gestionado?->format("Y-m-d h:i A"),
-                    "fecha_revisado" => $b->fecha_revisado?->format("Y-m-d h:i A"),
-                    "created_at" => $b->created_at->format("Y-m-d h:i A"),
-                    "monto_total" => number_format($b->detalles?->sum(function($detalle){
-                        return $detalle->cantidad * $detalle->producto->pventa;
-                    }) ?? 0, 2),
-                    'mercaderia' => $b->detalles?->map(function($p){
-                        return [
-                            "id" => $p->id,
-                            "lote" => $p->lote->lote,
-                            "fecha_vencimiento" => $p->lote->fecha_vencimiento,
-                            "sku" => $p->producto->sku,
-                            "nombre" => $p->producto->nombre,
-                            "imagen" => $p->producto->imagen,
-                            "caracteristicas" => $p->producto->caracteristicas,
-                            "cantidad" => $p->cantidad,
-                            "stock" => $p->stock,
-                            "created_at" => $p->created_at,
-                            "created_by" => $p->creador->name
-                        ];
-                    }) ?? collect(),
-                ];
-            })
+            'total' => $guias_prestamo->total(),
+            'guias_prestamo' => new GuiaPrestamoCollection($guias_prestamo),
         ]);
     }
 
@@ -69,6 +42,7 @@ class GuiasPrestamoController extends Controller
         $guia_prestamo_id = null;
         $codigo = null;
         $movimientos = null;
+        $encargado = null;
 
         if ($crearGuia) {
             $codigo = GuiaPrestamo::generar_codigo();
@@ -87,11 +61,13 @@ class GuiasPrestamoController extends Controller
             $guia = GuiaPrestamo::findOrFail($guia_prestamo_id);
             $codigo = $guia->codigo;
             $movimientos = $guia->detalles;
+            $encargado = $guia->user_encargado_id;
         }
 
         return response()->json([
             'guia_prestamo_id' => $guia_prestamo_id,
             'codigo' => $codigo,
+            'encargado_id' => $encargado,
             'usuarios' => User::where('state', 1)
                 ->get()
                 ->map(fn($p) => [
@@ -194,7 +170,46 @@ class GuiasPrestamoController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        DB::beginTransaction();
+
+        try {
+            $guia_prestamo = GuiaPrestamo::with('detalles')->findOrFail($id);
+
+            foreach ($guia_prestamo->detalles as $detalle) {
+                $producto = Producto::findOrFail($detalle->producto_id);
+                $producto->stock += $detalle->cantidad;
+                $producto->stock_vendedor += $detalle->cantidad;
+                $producto->actualizarEstadosStock();
+                $producto->save();
+
+                if ($detalle->lote_id) {
+                    $lote = ProductoLotes::findOrFail($detalle->lote_id);
+                    $lote->cantidad += $detalle->cantidad;
+                    $lote->cantidad_vendedor += $detalle->cantidad;
+                    $lote->save();
+                }
+
+                // Eliminar el detalle (soft delete o hard delete según tu diseño)
+                $detalle->delete();
+            }
+
+            // Finalmente eliminamos la guía
+            $guia_prestamo->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Guía de préstamo eliminada correctamente.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'error' => 'Ocurrió un error al eliminar la guía.',
+                'mensaje' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getProductosByLaboratorio(Request $request){
@@ -266,6 +281,28 @@ class GuiasPrestamoController extends Controller
                     "fecha_vencimiento_null" => $b->fecha_vencimiento ? false : true
                 ];
             }),
+        ]);
+    }
+
+    public function updateState( Request $request, $id){
+        $request->validate([
+            'state' => 'required|in:0,1,2,3,4,5' 
+        ]);
+        $guia_prestamo = GuiaPrestamo::with('detalles')->findOrFail($id);
+
+        if ($msg = $guia_prestamo->puedeCambiarAEstado($request->state)) {
+            return response()->json([
+                "message" => 403,
+                "message_text" => $msg
+            ], 422);
+        }
+
+        $guia_prestamo->update([
+            'state' => $request->state
+        ]);
+
+        return response()->json([
+            "guia_prestamo_actualizada" => new GuiaPrestamoResource($guia_prestamo)
         ]);
     }
 }

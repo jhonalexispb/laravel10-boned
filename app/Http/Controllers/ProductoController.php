@@ -43,7 +43,7 @@ class ProductoController extends Controller
                                 
         return response()->json([
             'total' => $products->total(),
-            'products' => ProductCollection::make($products),
+            'products' => new ProductCollection($products),
             'laboratorios' => Laboratorio::all()->map(function ($l) {
                 return [
                     "id" => $l->id,

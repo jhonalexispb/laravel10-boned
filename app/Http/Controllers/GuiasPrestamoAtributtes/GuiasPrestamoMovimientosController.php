@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\GuiasPrestamoAtributtes;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\GuiaPrestamo\GuiaPrestamoResource;
 use App\Models\GuiaPrestamo;
 use App\Models\GuiasPrestamoAtributtes\GuiaPrestamoDetalle;
 use App\Models\Producto;
@@ -281,6 +282,49 @@ class GuiasPrestamoMovimientosController extends Controller
             DB::rollBack();
             return response()->json([
                 'error' => 'Ocurrió un error inesperado.',
+                'mensaje' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function vaciarGuiaPrestamo($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $guia_prestamo = GuiaPrestamo::with('detalles')->findOrFail($id);
+
+            foreach ($guia_prestamo->detalles as $detalle) {
+                $producto = Producto::findOrFail($detalle->producto_id);
+                $producto->stock += $detalle->cantidad;
+                $producto->stock_vendedor += $detalle->cantidad;
+                $producto->actualizarEstadosStock();
+                $producto->save();
+
+                if ($detalle->lote_id) {
+                    $lote = ProductoLotes::findOrFail($detalle->lote_id);
+                    $lote->cantidad += $detalle->cantidad;
+                    $lote->cantidad_vendedor += $detalle->cantidad;
+                    $lote->save();
+                }
+
+                // Eliminar el detalle (soft delete o hard delete según tu diseño)
+                $detalle->delete();
+            }
+
+            $guia_prestamo->actualizarEstadoPorDetalles();
+
+            DB::commit();
+
+            return response()->json([
+                "guia_prestamo_actualizada" => new GuiaPrestamoResource($guia_prestamo)
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'error' => 'Ocurrió un error al eliminar los productos de la guia de prestamo.',
                 'mensaje' => $e->getMessage()
             ], 500);
         }

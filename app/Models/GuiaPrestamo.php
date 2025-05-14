@@ -72,4 +72,18 @@ class GuiaPrestamo extends Model implements Auditable
         $this->state = $tieneMovimientos ? 1 : 0; // 1: Pendiente, 0: En creación
         $this->save();
     }
+
+
+    public function puedeCambiarAEstado($nuevoEstado): ?string {
+        if ($nuevoEstado == 2) {
+            if (!$this->user_encargado_id) return "La guía no tiene un encargado asignado.";
+            if ($this->detalles->isEmpty()) return "La guía no tiene productos registrados.";
+        }
+
+        if ($nuevoEstado == 1 && $this->state != 2) {
+            return "La guía no tiene el estado de entregado.";
+        }
+
+        return null;
+    }
 }
