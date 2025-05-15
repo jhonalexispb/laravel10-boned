@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class OrdenVentaDetalle extends Model
 {
     use HasFactory, SoftDeletes, \OwenIt\Auditing\Auditable, AuditableTrait;
-    protected $table = "guias_prestamo_detalle";
+    protected $table = "orden_venta_detalle";
     protected $fillable = [
         'order_venta_id',
         'producto_id',

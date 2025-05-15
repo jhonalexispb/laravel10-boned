@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\OrdenVenta\OrdenVentaCollection;
 use App\Models\ClientesSucursales;
 use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
@@ -157,7 +158,19 @@ class OrdenVentaController extends Controller
 
 
 
+    public function index(Request $request)
+    {
+        $search = $request->get('search');
 
+        $ordenes_venta = OrdenVenta::where("codigo","like","%".$search."%")
+                                ->with('detalles')
+                                ->orderBy("id","desc")
+                                ->paginate(25);
+        return response()->json([
+            'total' => $ordenes_venta->total(),
+            'ordenes_venta' => new OrdenVentaCollection($ordenes_venta),
+        ]);
+    }
 
     public function store(Request $request)
     {
@@ -222,6 +235,27 @@ class OrdenVentaController extends Controller
                     "id" => $p->id,
                     "name" => $p->name,
                 ]),
+            "productos" => Producto::with([
+                                        'get_laboratorio', 
+                                    ])
+                                    ->where('state',1)
+                                    ->where('stock_vendedor','>',0)
+                                    ->get()->map(function ($p) {
+                return [
+                    "id" => $p->id,
+                    "sku" => $p->sku,
+                    "laboratorio" => $p->get_laboratorio->name,
+                    "laboratorio_id" => $p->laboratorio_id,
+                    "color_laboratorio" => $p->get_laboratorio->color,
+                    "nombre" => $p->nombre,
+                    "caracteristicas" => $p->caracteristicas,
+                    "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
+                    "pventa" => $p->pventa ?? '0.0',
+                    "stock" => $p->stock_vendedor ?? '0',
+                    "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
+                    "maneja_escalas" => $p->maneja_escalas,
+                ];
+            }) ?? collect(),
             'movimiento' => $movimientos?->map(function ($p) {
                      return [
                          "id" => $p->id,

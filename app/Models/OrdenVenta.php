@@ -7,16 +7,17 @@ use App\Models\OrdenVentaAtributtes\ComprobanteOrdenVenta;
 use App\Models\OrdenVentaAtributtes\DocumentosTransporteOrdenVenta;
 use App\Models\OrdenVentaAtributtes\OrdenVentaDetalle;
 use App\Models\OrdenVentaAtributtes\TransportesOrdenVenta;
+use App\Models\Traits\AuditableTrait;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
 
-class OrdenVenta extends Model
+class OrdenVenta extends Model implements Auditable
 {
-    use HasFactory, SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, \OwenIt\Auditing\Auditable, AuditableTrait;
 
     protected $table = "orden_venta";
     protected $fillable = [
