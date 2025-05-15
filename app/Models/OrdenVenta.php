@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\ClienteSucursalAtributtes\ModoFacturacion;
 use App\Models\OrdenVentaAtributtes\ComprobanteOrdenVenta;
 use App\Models\OrdenVentaAtributtes\DocumentosTransporteOrdenVenta;
+use App\Models\OrdenVentaAtributtes\OrdenVentaDetalle;
 use App\Models\OrdenVentaAtributtes\TransportesOrdenVenta;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,22 +27,25 @@ class OrdenVenta extends Model
         "formaPago",
         "forma_facturacion_id",
         "comentario",
-        "zonaReparto",
+        "zona_reparto",
         "transporte_id",
         "state_orden",
         "fecha_envio",
-        "fecha_facturacion",
+        "fecha_creacion_comprobante",
+        "estado_pago",
+        "monto_pagado",
         "state_fisico",
         "fecha_empaquetado",
         "fecha_cargado",
         "fecha_agencia",
         "fecha_entregado_cliente",
-        "doc_pend_agencia",
-        "fecha_documentacion_entregada",
+
         "state_seguimiento",
         "fecha_corroboracion",
         "documento_transporte_id",
-        "usuario_id",
+        "created_by",
+        "updated_by",
+        "deleted_by",
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -84,27 +88,32 @@ class OrdenVenta extends Model
         return $prefijo . $ultimoNumero;
     }
 
-    public function getCliente(){
+    public function cliente(){
         return $this->belongsTo(ClientesSucursales::class, "cliente_id");
     }
 
-    public function getComprobante(){
+    public function comprobante(){
         return $this->belongsTo(ComprobanteOrdenVenta::class, "comprobante_id");
     }
 
-    public function getFormaPago(){
+    public function forma_pago(){
         return $this->belongsTo(ModoFacturacion::class, "forma_facturacion_id");
     }
 
-    public function getTransporte(){
+    public function transporte(){
         return $this->belongsTo(TransportesOrdenVenta::class, "transporte_id");
     }
 
-    public function getDocumentoTransporte(){
+    public function documento_transporte(){
         return $this->belongsTo(DocumentosTransporteOrdenVenta::class, "documento_transporte_id");
     }
 
-    public function getCreador(){
-        return $this->belongsTo(User::class, "usuario_id");
+    public function creador(){
+        return $this->belongsTo(User::class, "created_by");
+    }
+
+    public function detalles()
+    {
+        return $this->hasMany(OrdenVentaDetalle::class, 'order_venta_id');
     }
 }

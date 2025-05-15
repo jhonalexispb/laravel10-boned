@@ -9,6 +9,7 @@ use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use App\Models\OrdenVenta;
 use App\Models\Producto;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class OrdenVentaController extends Controller
@@ -64,90 +65,41 @@ class OrdenVentaController extends Controller
             }),
         ]);
     }
+    //necasitamoas envai8r la mercaderia que no este vencida, y que no este para devolucion, si no tiene devolucion se tiene que avisar, habra una seccion en donde se filtre los productos que esten a 6 y 3 meses de vencery tiene que ser configurable 
+    public function getProductosByLaboratorio(Request $request){
+        $request->validate([
+            'laboratorio_id' => 'nullable|array',
+            'laboratorio_id.*' => 'exists:laboratorio,id',
+        ]);
 
-    public function getRecursosIniciales(){
-        $userId = auth()->id();
+        $query = Producto::query();
 
-        $search_codigo = OrdenVenta::where('usuario_id',$userId)
-                        ->where('state_orden',0)
-                        ->first();
-        if($search_codigo){
-            $carrito_venta_id = $search_codigo->id;
-            $codigo = $search_codigo->codigo;
-        }else{
-            $codigo = OrdenVenta::generarCodigo($userId);
-            if (!$codigo) {
-                return response() -> json([
-                    "message" => 403,
-                    "message_text" => 'Codigo no generado'
-                ],422);
-            }
-
-            $carritoVenta  = OrdenVenta::create([
-                'usuario_id' => $userId,
-                'codigo' => $codigo,
-            ]);
-
-            if (!$carritoVenta) {
-                return response() -> json([
-                    "message" => 403,
-                    "message_text" => 'Carrito de venta no creado'
-                ],422);
-            }
-
-            $carrito_venta_id = $carritoVenta->id;
+        if (!empty($request->laboratorio_id)) {
+            $query->whereIn('laboratorio_id', $request->laboratorio_id);
         }
 
         return response()->json([
-            'codigo' => $codigo,
-            'carrito_venta_id' => $carrito_venta_id
-        ]);
-    }
-    //necasitamoas envai8r la mercaderia que no este vencida, y que no este para devolucion, si no tiene devolucion se tiene que avisar, habra una seccion en donde se filtre los productos que esten a 6 y 3 meses de vencery tiene que ser configurable 
-    public function getProductos(){
-
-        return response()->json([
-            "productos" => Producto::where('state', 1)
-                                    /* ->where('stock', '>', 0) */
-                                    ->with([
-                                        'get_escalas' => function ($query) {
-                                            $query->where('state', 1); // Solo escalas activas
-                                        },
-                                        'get_lotes' => function ($query) {
-                                            $query->where('state', 1); // Solo lotes activos
-                                        },
-                                        'get_laboratorio',
-                                        'get_lineaFarmaceutica',
-                                        'get_fabricante',
-                                        'get_presentacion',
-                                        'get_principios_activos'
+            "productos" => $query->with([
+                                        'get_laboratorio', 
                                     ])
-                                    ->orderBy('sku','asc')
-                                    ->get()
-                                    ->map(function ($p) {
+                                    ->where('state',1)
+                                    ->where('stock_vendedor','>',0)
+                                    ->get()->map(function ($p) {
                 return [
                     "id" => $p->id,
                     "sku" => $p->sku,
-                    "tproducto" => $p->tproducto,
                     "laboratorio" => $p->get_laboratorio->name,
                     "laboratorio_id" => $p->laboratorio_id,
                     "color_laboratorio" => $p->get_laboratorio->color,
                     "nombre" => $p->nombre,
                     "caracteristicas" => $p->caracteristicas,
-                    "nombre_completo" => $p->nombre . ' ' . $p->caracteristicas,
+                    "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
                     "pventa" => $p->pventa ?? '0.0',
-                    "stock" => $p->stock ?? '0',
+                    "stock" => $p->stock_vendedor ?? '0',
                     "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
-                    "linea_farmaceutica" => $p->get_lineaFarmaceutica->nombre,
-                    "fabricante" => $p->get_fabricante->nombre,
-                    "presentacion" => $p->presentacion_id ? $p->get_presentacion->name : 'Sin presentación',
-                    "principios_activos" => $p->get_principios_activos->pluck('id')->toArray(),
                     "maneja_escalas" => $p->maneja_escalas,
-                    "escalas" => $p->get_escalas, // Solo escalas activas
-                    "lotes" => $p->get_lotes, // Solo lotes activos
-                    "state_stock" => $p->state_stock ?? 3,
                 ];
-            })
+            }) ?? collect(),
         ]);
     }  
     
@@ -217,7 +169,7 @@ class OrdenVentaController extends Controller
         $cliente = null;
 
         if ($crearOrdenVenta) {
-            $codigo = OrdenVenta::generar_codigo($userId);
+            $codigo = OrdenVenta::generarCodigo($userId);
 
             if (!$codigo) {
                 return response()->json(['error' => 'Código no generado'], 422);
@@ -230,7 +182,10 @@ class OrdenVentaController extends Controller
             $orden_venta_id = $guia_prestamo->id;
         } else {
             $orden_venta_id = $request->input('orden_venta_id');
-            $orden_venta = OrdenVenta::findOrFail($orden_venta_id);
+            $orden_venta = OrdenVenta::with([
+                'detalles.producto.get_laboratorio',
+                'detalles.lote'
+            ])->findOrFail($orden_venta_id);
             $codigo = $orden_venta->codigo;
             $movimientos = $orden_venta->detalles;
             $cliente = $orden_venta->cliente_id;
@@ -239,37 +194,33 @@ class OrdenVentaController extends Controller
         return response()->json([
             'orden_venta_id' => $orden_venta_id,
             'codigo' => $codigo,
-            'encargado_id' => $cliente,
-            'clientes' => ClientesSucursales::where('state', 1)
+            'cliente_id' => $cliente,
+            'clientes' => ClientesSucursales::with([
+                    'ruc',
+                    'getNameDistrito.provincia.departamento',
+                    'getEstadoDigemid'
+                ])
+                ->where('state', 1)
                 ->get()
                 ->map(fn($p) => [
                     "id" => $p->id,
-                    "name" => $p->name,
-                    "name_complete" => $p->name . ' ' . $p->surname,
-                    "email" => $p->email,
+                    "ruc" => $p->ruc->ruc,
+                    "razon_social" => $p->ruc->razonSocial,
+                    "nombre_comercial" => $p->nombre_comercial,
+                    "direccion" => $p->direccion,
+                    "distrito" => $p->distrito ?? (
+                        $p->getNameDistrito->provincia->departamento->name . '/' .
+                        $p->getNameDistrito->provincia->name . '/' .
+                        $p->getNameDistrito->name
+                    ),
+                    "deuda" => $p->deuda,
+                    "estado_digemid" => $p->getEstadoDigemid->nombre,
                 ]),
             'laboratorios' => Laboratorio::where('state', 1)
                 ->get()
                 ->map(fn($p) => [
                     "id" => $p->id,
                     "name" => $p->name,
-                ]),
-            'productos' => Producto::where('state', 1)
-                ->where('stock_vendedor', '>', 0)
-                ->with('get_laboratorio')
-                ->get()
-                ->map(fn($p) => [
-                    "id" => $p->id,
-                    "sku" => $p->sku,
-                    "laboratorio" => $p->get_laboratorio->name,
-                    "laboratorio_id" => $p->laboratorio_id,
-                    "color_laboratorio" => $p->get_laboratorio->color,
-                    "nombre" => $p->nombre,
-                    "caracteristicas" => $p->caracteristicas,
-                    "nombre_completo" => $p->nombre . ' ' . $p->caracteristicas,
-                    "pventa" => $p->pventa ?? '0.0',
-                    "stock" => $p->stock_vendedor ?? '0',
-                    "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
                 ]),
             'movimiento' => $movimientos?->map(function ($p) {
                      return [
@@ -280,11 +231,12 @@ class OrdenVentaController extends Controller
                          "color_laboratorio" => $p->producto->get_laboratorio->color,
                          "nombre" => $p->producto->nombre,
                          "caracteristicas" => $p->producto->caracteristicas,
-                         "pventa" => $p->producto->pventa ?? '0.0',
                          "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
 
                          "lote" => ($p->lote->lote ?? 'SIN LOTE') . ' - ' . ($p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV'),
                          "cantidad" => $p->cantidad,
+                         "pventa" => $p->pventa,
+                         "total" => $p->total,
                      ];
                  }) ?? collect(),
         ]);

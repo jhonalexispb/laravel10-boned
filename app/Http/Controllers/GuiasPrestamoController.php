@@ -226,7 +226,6 @@ class GuiasPrestamoController extends Controller
 
         return response()->json([
             "productos" => $query->with([
-                                        'get_lotes',
                                         'get_laboratorio', 
                                     ])
                                     ->where('state',1)
