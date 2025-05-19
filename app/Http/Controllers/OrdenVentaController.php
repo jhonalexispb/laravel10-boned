@@ -131,26 +131,25 @@ class OrdenVentaController extends Controller
         $lotes = $producto->get_lotes()->where('cantidad', '>', 0)->orderBy('fecha_vencimiento','asc')->get();
 
         return response()->json([
-            "stock" => $producto->stock,
+            "stock" => $producto->stock_vendedor,
             "pventa" => $producto->pventa,
             "escalas" => $escalas->map(function($b){
                 return [
                     "id" => $b->id,
                     "cantidad" => $b->cantidad,
                     "precio" => $b->precio,
-                    "state" => $b->state,
                 ];
             }),
-            "lotes" => $lotes->map(function($b) use ($hoy){
-                $fechaVencimiento = \Carbon\Carbon::parse($b->fecha_vencimiento);
+            "lotes" => $lotes->map(function ($b) use ($hoy) {
+                $fechaVencimiento = Carbon::parse($b->fecha_vencimiento);
                 $dias_faltantes = $hoy->diffInDays($fechaVencimiento, false);
                 return [
                     "id" => $b->id,
-                    "fecha_vencimiento" => $fechaVencimiento,
                     "dias_faltantes" => $dias_faltantes,
-                    "lote" => $b->lote,
-                    "cantidad" => $b->cantidad,
-                    "state" => $b->state,
+                    "lote" => $b->lote ?? 'SIN LOTE',
+                    "fecha_vencimiento" => ' FV: ' . $b->fecha_vencimiento ? Carbon::parse($b->fecha_vencimiento)->format("d-m-Y") : 'SIN FECHA DE VENCIMIENTO',
+                    "cantidad" => $b->cantidad_vendedor,
+                    "fecha_vencimiento_null" => $b->fecha_vencimiento ? false : true
                 ];
             }),
         ]);
@@ -163,7 +162,14 @@ class OrdenVentaController extends Controller
         $search = $request->get('search');
 
         $ordenes_venta = OrdenVenta::where("codigo","like","%".$search."%")
-                                ->with('detalles')
+                                ->with([
+                                    'detalles',
+                                    'cliente.ruc',
+                                    'cliente.getNameDistrito.provincia.departamento',
+                                    'cliente.getEstadoDigemid',
+                                    'comprobante',
+                                    'transporte'
+                                ])
                                 ->orderBy("id","desc")
                                 ->paginate(25);
         return response()->json([
@@ -188,11 +194,11 @@ class OrdenVentaController extends Controller
                 return response()->json(['error' => 'Código no generado'], 422);
             }
 
-            $guia_prestamo = OrdenVenta::create([
+            $orden = OrdenVenta::create([
                 'codigo' => $codigo,
             ]);
 
-            $orden_venta_id = $guia_prestamo->id;
+            $orden_venta_id = $orden->id;
         } else {
             $orden_venta_id = $request->input('orden_venta_id');
             $orden_venta = OrdenVenta::with([
@@ -229,12 +235,6 @@ class OrdenVentaController extends Controller
                     "deuda" => $p->deuda,
                     "estado_digemid" => $p->getEstadoDigemid->nombre,
                 ]),
-            'laboratorios' => Laboratorio::where('state', 1)
-                ->get()
-                ->map(fn($p) => [
-                    "id" => $p->id,
-                    "name" => $p->name,
-                ]),
             "productos" => Producto::with([
                                         'get_laboratorio', 
                                     ])
@@ -258,19 +258,19 @@ class OrdenVentaController extends Controller
             }) ?? collect(),
             'movimiento' => $movimientos?->map(function ($p) {
                      return [
-                         "id" => $p->id,
-                         "producto_id" => $p->producto_id,
-                         "sku" => $p->producto->sku,
-                         "laboratorio" => $p->producto->get_laboratorio->name,
-                         "color_laboratorio" => $p->producto->get_laboratorio->color,
-                         "nombre" => $p->producto->nombre,
-                         "caracteristicas" => $p->producto->caracteristicas,
-                         "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
-
-                         "lote" => ($p->lote->lote ?? 'SIN LOTE') . ' - ' . ($p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV'),
-                         "cantidad" => $p->cantidad,
-                         "pventa" => $p->pventa,
-                         "total" => $p->total,
+                        "id" => $p->id,
+                        "producto_id" => $p->producto_id,
+                        "sku" => $p->producto->sku,
+                        "laboratorio" => $p->producto->get_laboratorio->name,
+                        "color_laboratorio" => $p->producto->get_laboratorio->color,
+                        "nombre" => $p->producto->nombre,
+                        "caracteristicas" => $p->producto->caracteristicas,
+                        "pventa" => $p->producto->pventa ?? '0.0',
+                        "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
+                        "lote" => $p->lote->lote ?? 'SIN LOTE',
+                        "fecha_vencimiento" => $p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV',
+                        "cantidad" => $p->cantidad,
+                        "total" => $p->total,
                      ];
                  }) ?? collect(),
         ]);

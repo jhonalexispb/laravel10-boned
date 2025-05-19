@@ -58,6 +58,17 @@ class Producto extends Model
         "state_stock_vendedor",
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($producto) {
+            if ($producto->stock_vendedor < 0) {
+                throw new \Exception("No se puede guardar un producto con stock negativo.");
+            }
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         // Aquí defines cómo se registrarán las actividades

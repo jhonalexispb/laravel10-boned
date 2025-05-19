@@ -24,6 +24,17 @@ class ProductoLotes extends Model
         "state",
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saving(function ($lote) {
+            if ($lote->cantidad_vendedor < 0) {
+                throw new \Exception("No se puede guardar un lote con stock negativo.");
+            }
+        });
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         // Aquí defines cómo se registrarán las actividades

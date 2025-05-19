@@ -25,8 +25,7 @@ class OrdenVenta extends Model implements Auditable
         "cliente_id",
         "comprobante_id",
         "total",
-        "formaPago",
-        "forma_facturacion_id",
+        "forma_pago",
         "comentario",
         "zona_reparto",
         "transporte_id",
@@ -95,10 +94,6 @@ class OrdenVenta extends Model implements Auditable
 
     public function comprobante(){
         return $this->belongsTo(ComprobanteOrdenVenta::class, "comprobante_id");
-    }
-
-    public function forma_pago(){
-        return $this->belongsTo(ModoFacturacion::class, "forma_facturacion_id");
     }
 
     public function transporte(){

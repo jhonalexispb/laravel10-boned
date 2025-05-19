@@ -17,32 +17,53 @@ class OrdenVentaResource extends JsonResource
         return [
             "id" => $this->id,
             "codigo" => $this->codigo,
-            "cliente_id" => $this->cliente_id,
-            "comprobante_id" => $this->comprobante_id,
+            "cliente" => $this->cliente_id ? [
+                "id" => $this->cliente->id,
+                "ruc" => $this->cliente->ruc->ruc ?? null,
+                "razon_social" => $this->cliente->ruc->razonSocial ?? null,
+                "nombre_comercial" => $this->cliente->nombre_comercial,
+                /* "direccion" => $this->cliente->direccion,
+                "distrito" => $this->cliente->distrito ?? (
+                    optional($this->cliente->getNameDistrito->provincia->departamento)->name . '/' .
+                    optional($this->cliente->getNameDistrito->provincia)->name . '/' .
+                    optional($this->cliente->getNameDistrito)->name
+                ),
+                "deuda" => $this->cliente->deuda,
+                "estado_digemid" => $this->cliente->getEstadoDigemid->nombre ?? null, */
+            ] : null,
+            "comprobante_id" => $this->comprobante_id ? [
+                "id" => $this->comprobante->id,
+                "name" => $this->comprobante->name
+            ] : null,
             "total" => $this->total,
-            "formaPago" => $this->formaPago,
-            "forma_facturacion_id" => $this->forma_facturacion_id,
+            "forma_pago" => match ($this->forma_pago) {
+                1 => 'CREDITO',
+                0 => 'CONTADO',
+                default => null,
+            },
             "comentario" => $this->comentario,
             "zona_reparto" => $this->zona_reparto,
-            "transporte_id" => $this->transporte_id,
+            "transporte_id" => $this->transporte_id ? [
+                "id" => $this->transporte->id,
+                "name" => $this->transporte->name
+            ] : null,
             "state_orden" => $this->state_orden,
             "estado_pago" => $this->estado_pago,
             "monto_pagado" => $this->monto_pagado,
             "state_fisico" => $this->state_fisico,
             "state_seguimiento" => $this->state_seguimiento,
-            "documento_transporte_id" => $this->documento_transporte_id,
-            "created_by" => $this->created_by,
-            "created_at" => $this->created_at,
+            /* "documento_transporte_id" => $this->documento_transporte_id, */
+            "created_by" => $this->creador->name,
 
             "trasabilidad" => [
-                'created_at' => $this->created_at,
-                'fecha_envio' => $this->fecha_envio,
-                'fecha_creacion_comprobante' => $this->fecha_creacion_comprobante,
-                'fecha_empaquetado' => $this->fecha_empaquetado,
-                'fecha_cargado' => $this->fecha_cargado,
-                'fecha_agencia' => $this->fecha_agencia,
-                'fecha_entregado_cliente' => $this->fecha_entregado_cliente,
-                'fecha_corroboracion' => $this->fecha_corroboracion,
+                'created_at' => $this->created_at?->format('d/m/Y H:i:s'),
+                'fecha_envio' => $this->fecha_envio?->format('d/m/Y H:i:s'),
+                'fecha_creacion_comprobante' => $this->fecha_creacion_comprobante?->format('d/m/Y H:i:s'),
+                'fecha_empaquetado' => $this->fecha_empaquetado?->format('d/m/Y H:i:s'),
+                'fecha_cargado' => $this->fecha_cargado?->format('d/m/Y H:i:s'),
+                'fecha_agencia' => $this->fecha_agencia?->format('d/m/Y H:i:s'),
+                'fecha_entregado_cliente' => $this->fecha_entregado_cliente?->format('d/m/Y H:i:s'),
+                'fecha_corroboracion' => $this->fecha_corroboracion?->format('d/m/Y H:i:s'),
             ],
 
             "mercaderia" => $this->detalles?->map(function ($p) {
@@ -56,8 +77,8 @@ class OrdenVentaResource extends JsonResource
                     "caracteristicas" => $p->producto->caracteristicas,
                     "cantidad" => $p->cantidad,
                     "pventa" => $p->pventa,
-                    "total" => $p->total, // este reemplaza el pventa duplicado
-                    "created_at" => $p->created_at,
+                    "total" => $p->total,
+                    "created_at" => $p->created_at?->format('d/m/Y H:i:s'),
                     "created_by" => $p->creador->name ?? null,
                 ];
             }) ?? collect(),

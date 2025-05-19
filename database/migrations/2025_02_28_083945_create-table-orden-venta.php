@@ -20,8 +20,6 @@ return new class extends Migration
             $table->foreign('comprobante_id')->references('id')->on('comprobante_orden_venta')->onDelete('restrict');
             $table->decimal('total',10,2)->default(0);
             $table->boolean('forma_pago')->nullable()->comment('0 es contado, 1 es credito');
-            $table->unsignedBigInteger('forma_facturacion_id')->nullable();
-            $table->foreign('forma_facturacion_id')->references('id')->on('formas_facturacion_cliente')->onDelete('restrict')->comment('Se usa cuando el clinte trabaja al credito, se establece cuantos dias de facturacion va a tener');
             $table->longText('comentario')->nullable();
 
             $table->boolean('zona_reparto')->nullable()->comment('0 es local, 1 es provincia');
