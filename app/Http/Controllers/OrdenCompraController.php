@@ -421,7 +421,6 @@ class OrdenCompraController extends Controller
             'getCuotas',
             'comprobante.detalleGestionado.producto',
             'comprobante.detalleGestionado.afectacion',
-            'guia_devolucion.typeComprobanteSerie',
             'detalles_gestionados',
         ])
         ->withCount(['getCuotas as cuotas_pendientes' => function($query) {
@@ -482,17 +481,6 @@ class OrdenCompraController extends Controller
                                     "pcompra" => $m->pcompra,
                                 ];
                             })
-                        ];
-                    }) ?? collect(),
-                    'guias_devolucion' => $d->guia_devolucion?->map(function($c){
-                        return [
-                            "id" => $c->id,
-                            "serie" => $c->typeComprobanteSerie->serie,
-                            "correlativo" => $c->correlativo,
-                            "created_at" => Carbon::parse($c->created_at)->format("Y-m-d"),
-                            "state" => $c->state == 1 ? 'SOLVENTADO' : 'SOLICITADO',
-                            "descripcion" => $c->descripcion,
-                            "date_justificado" => $c->date_justificado ? Carbon::parse($c->date_justificado)->format("Y-m-d") : '',
                         ];
                     }) ?? collect(),
 

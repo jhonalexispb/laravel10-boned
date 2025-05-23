@@ -9,6 +9,7 @@ use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use App\Models\OrdenVenta;
+use App\Models\OrdenVentaAtributtes\ComprobanteOrdenVenta;
 use App\Models\Producto;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -214,6 +215,13 @@ class OrdenVentaController extends Controller
             'orden_venta_id' => $orden_venta_id,
             'codigo' => $codigo,
             'cliente_id' => $cliente,
+            'transportes' =>  ComprobanteOrdenVenta::where('venta',1)
+                                ->where('state',1)
+                                ->get()->map(fn($p) => [
+                "id" => $p->id,
+                "name" => $p->name,
+            ]),
+
             'clientes' => ClientesSucursales::with([
                     'ruc',
                     'getNameDistrito.provincia.departamento',
@@ -227,14 +235,18 @@ class OrdenVentaController extends Controller
                     "razon_social" => $p->ruc->razonSocial,
                     "nombre_comercial" => $p->nombre_comercial,
                     "direccion" => $p->direccion,
-                    "distrito" => $p->distrito ?? (
-                        $p->getNameDistrito->provincia->departamento->name . '/' .
-                        $p->getNameDistrito->provincia->name . '/' .
-                        $p->getNameDistrito->name
-                    ),
+                    "distrito" => $p->getNameDistrito->provincia->departamento->name . '/' .
+                                $p->getNameDistrito->provincia->name . '/' .
+                                $p->getNameDistrito->name,
                     "deuda" => $p->deuda,
                     "estado_digemid" => $p->getEstadoDigemid->nombre,
-                ]),
+                    "type_documentos" => $p->getEstadoDigemid->comprobantesPermitidos->map(fn($doc) => [
+                        'id' => $doc->id,
+                        'codigo' => $doc->codigo,
+                        'name' => $doc->name,
+                    ]),
+                    "forma_pago" => $p->formaPago
+            ]),
             "productos" => Producto::with([
                                         'get_laboratorio', 
                                     ])

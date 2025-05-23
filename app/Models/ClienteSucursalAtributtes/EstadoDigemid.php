@@ -2,6 +2,7 @@
 
 namespace App\Models\ClienteSucursalAtributtes;
 
+use App\Models\OrdenVentaAtributtes\ComprobanteOrdenVenta;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,16 @@ class EstadoDigemid extends Model
     protected $fillable = [
         "nombre",
     ];
+
+    public function comprobantesPermitidos()
+    {
+        return $this->belongsToMany(
+            ComprobanteOrdenVenta::class,
+            'comp_ov_estdig_relation',
+            'esta_dig_id',
+            'comp_ov_id'
+        );
+    }
 
     public function getActivitylogOptions(): LogOptions
     {

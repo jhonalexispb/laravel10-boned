@@ -32,6 +32,7 @@ require __DIR__.'/routes/producto_atributtes/escalasProducto.php';
 require __DIR__.'/routes/producto_atributtes/lotesProductos.php';
 require __DIR__.'/routes/orden_compra.php';
 require __DIR__.'/routes/orden_venta.php';
+require __DIR__.'/routes/transporte-orden-venta.php';
 require __DIR__.'/routes/orden_venta_atributtes/orden_venta_detalle.php';
 require __DIR__.'/routes/guia-prestamo.php';
 require __DIR__.'/routes/guias_prestamo_atributtes/guias_prestamo_detalle.php';

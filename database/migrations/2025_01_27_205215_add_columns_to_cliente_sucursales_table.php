@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('modo_facturacion_id')->default(1)->after('state');
             $table->foreign('modo_facturacion_id')->references('id')->on('formas_facturacion_cliente')->after('modo_facturacion_id');
             $table->integer('dias',false,true)->default(30)->after('modo_facturacion_id');
-            $table->enum('formaPago',["1","2","3"])->default('3')->comment('1 credito, 2 contado, 3 credito/contado')->after('dias');
+            $table->enum('formaPago',["1","2","3"])->default('2')->comment('1 credito, 2 contado, 3 credito/contado')->after('dias');
         });
     }
 

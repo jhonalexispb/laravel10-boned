@@ -17,7 +17,7 @@ return new class extends Migration
             $table->unsignedBigInteger('cliente_id')->nullable();
             $table->foreign('cliente_id')->references('id')->on('cliente_sucursales')->onDelete('restrict');
             $table->unsignedBigInteger('comprobante_id')->nullable();
-            $table->foreign('comprobante_id')->references('id')->on('comprobante_orden_venta')->onDelete('restrict');
+            $table->foreign('comprobante_id')->references('id')->on('orden_venta_type_comprobante')->onDelete('restrict');
             $table->decimal('total',10,2)->default(0);
             $table->boolean('forma_pago')->nullable()->comment('0 es contado, 1 es credito');
             $table->longText('comentario')->nullable();

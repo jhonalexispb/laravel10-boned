@@ -2,6 +2,7 @@
 
 namespace App\Models\OrdenVentaAtributtes;
 
+use App\Models\ClienteSucursalAtributtes\EstadoDigemid;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,12 +14,23 @@ class ComprobanteOrdenVenta extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
-    protected $table = "comprobante_orden_venta";
+    protected $table = "orden_venta_type_comprobante";
     protected $fillable = [
         'codigo',
+        'venta',
         'name',
         'state',
     ];
+
+    public function estadosDigemid()
+    {
+        return $this->belongsToMany(
+            EstadoDigemid::class,
+            'comp_ov_estdig_relation',
+            'comp_ov_id',
+            'esta_dig_id'
+        );
+    }
 
     public function getActivitylogOptions(): LogOptions
     {

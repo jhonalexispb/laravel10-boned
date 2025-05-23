@@ -102,11 +102,6 @@ class OrdenCompra extends Model implements Auditable
         return $this->hasMany(NDocumentoOrdenCompra::class, 'orden_compra_id');
     }
 
-    public function guia_devolucion()
-    {
-        return $this->hasMany(GuiaDevolucion::class, 'order_compra_id');
-    }
-
     public function creador(){
         return $this->belongsTo(User::class, "created_by");
     }
