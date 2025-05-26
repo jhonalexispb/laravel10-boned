@@ -277,7 +277,7 @@ class ClientesSucursalesController extends Controller
                     "nombre_estado_digemid"=> $sucursal->getEstadoDigemid->nombre,
                     "direccion" => $sucursal->direccion,
                     "deuda" => $sucursal->deuda ?? 0.0,
-                    "formaPago" => $sucursal->formaPago ?? 3, 
+                    "formaPago" => $sucursal->formaPago ?? 2, 
                     "linea_credito" => $sucursal->linea_credito ?? 0.0,
                     "modo_trabajo" => $sucursal->modo_trabajo,
                     "distrito" => $sucursal->distrito ? $sucursal->getNameDistrito->name : null, // Accedemos al nombre del distrito

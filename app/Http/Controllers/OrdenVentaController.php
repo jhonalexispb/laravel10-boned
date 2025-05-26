@@ -10,6 +10,7 @@ use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use App\Models\OrdenVenta;
 use App\Models\OrdenVentaAtributtes\ComprobanteOrdenVenta;
+use App\Models\OrdenVentaAtributtes\TransportesOrdenVenta;
 use App\Models\Producto;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -215,8 +216,7 @@ class OrdenVentaController extends Controller
             'orden_venta_id' => $orden_venta_id,
             'codigo' => $codigo,
             'cliente_id' => $cliente,
-            'transportes' =>  ComprobanteOrdenVenta::where('venta',1)
-                                ->where('state',1)
+            'transportes' =>  TransportesOrdenVenta::where('state',1)
                                 ->get()->map(fn($p) => [
                 "id" => $p->id,
                 "name" => $p->name,
