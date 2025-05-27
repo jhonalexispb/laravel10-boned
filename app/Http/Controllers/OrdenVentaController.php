@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\OrdenVenta\OrdenVentaCollection;
 use App\Models\ClientesSucursales;
-use App\Models\Configuration\Laboratorio;
 use App\Models\Configuration\Proveedor;
 use App\Models\OrdenCompraAtributtes\FormaPagoOrdenesCompra;
 use App\Models\OrdenCompraAtributtes\TipoComprobantePagoCompra;
 use App\Models\OrdenVenta;
-use App\Models\OrdenVentaAtributtes\ComprobanteOrdenVenta;
 use App\Models\OrdenVentaAtributtes\TransportesOrdenVenta;
 use App\Models\Producto;
 use Carbon\Carbon;
@@ -223,21 +221,28 @@ class OrdenVentaController extends Controller
             ]),
 
             'clientes' => ClientesSucursales::with([
-                    'ruc',
-                    'getNameDistrito.provincia.departamento',
-                    'getEstadoDigemid'
-                ])
-                ->where('state', 1)
-                ->get()
-                ->map(fn($p) => [
+                'ruc',
+                'getNameDistrito.provincia.departamento',
+                'getEstadoDigemid',
+                'getDirecciones.distrito.provincia.departamento'
+            ])
+            ->where('state', 1)
+            ->get()
+            ->map(function ($p) {
+                $departamento = strtoupper(trim($p->getNameDistrito->provincia->departamento->name));
+                $provincia = strtoupper(trim($p->getNameDistrito->provincia->name));
+                $distrito = strtoupper(trim($p->getNameDistrito->name));
+
+                $zona = ($departamento === 'AREQUIPA' && $provincia === 'AREQUIPA') ? 0 : 1;
+
+                return [
                     "id" => $p->id,
                     "ruc" => $p->ruc->ruc,
                     "razon_social" => $p->ruc->razonSocial,
                     "nombre_comercial" => $p->nombre_comercial,
                     "direccion" => $p->direccion,
-                    "distrito" => $p->getNameDistrito->provincia->departamento->name . '/' .
-                                $p->getNameDistrito->provincia->name . '/' .
-                                $p->getNameDistrito->name,
+                    "distrito" => $departamento . '/' . $provincia . '/' . $distrito,
+                    "zona_reparto" => $zona,
                     "deuda" => $p->deuda,
                     "estado_digemid" => $p->getEstadoDigemid->nombre,
                     "type_documentos" => $p->getEstadoDigemid->comprobantesPermitidos->map(fn($doc) => [
@@ -245,8 +250,19 @@ class OrdenVentaController extends Controller
                         'codigo' => $doc->codigo,
                         'name' => $doc->name,
                     ]),
-                    "forma_pago" => $p->formaPago
-            ]),
+                    "forma_pago" => $p->formaPago,
+                    "lugares_entrega" => $p->getDirecciones?->map(fn($l) => [
+                        'id' => $l->id,
+                        "address" => $l->distrito
+                        ? strtoupper(trim($l->address)) . ' - ' . strtoupper(trim($l->distrito->provincia->departamento->name)) . '/' .
+                        strtoupper(trim($l->distrito->provincia->name)) . '/' .
+                        strtoupper(trim($l->distrito->name)) 
+                        : strtoupper(trim($l->address)),
+                        'latitud' => $l->latitud,
+                        'longitud' => $l->longitud,
+                    ]),
+                ];
+            }),
             "productos" => Producto::with([
                                         'get_laboratorio', 
                                     ])

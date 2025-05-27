@@ -31,4 +31,8 @@ class lugarEntrega extends Model
         date_default_timezone_set("America/Lima");
         $this->attributes["updated_at"] = Carbon::now();
     }
+
+    public function distrito(){
+        return $this->belongsTo(Distrito::class,'distrito_id');
+    }
 }

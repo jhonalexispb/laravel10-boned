@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\configuration;
 
 use App\Http\Controllers\Controller;
+use App\Models\Configuration\Distrito;
 use App\Models\configuration\lugarEntrega;
 use Illuminate\Http\Request;
 
@@ -12,13 +13,12 @@ class lugarEntregaController extends Controller
     {
         $search = $request->get("search");
 
-        $lugarEntrega = lugarEntrega::where("name","like","%".$search."%")->orderBy("id","desc")->paginate(25);
+        $lugarEntrega = lugarEntrega::where("address","like","%".$search."%")->orderBy("id","desc")->paginate(25);
         return response()->json([
             "total" => $lugarEntrega->total(),
             "lugarEntrega" => $lugarEntrega->map(function($lugarEntrega){
                 return [
                     "id" => $lugarEntrega->id,
-                    "name" => $lugarEntrega->name,
                     "address" => $lugarEntrega->address,
                     "state" => $lugarEntrega->state,
                     "coordenadas" => $lugarEntrega->destination_coordinates,
@@ -33,23 +33,42 @@ class lugarEntregaController extends Controller
      */
     public function store(Request $request)
     {
-        $is_exist_lugar_entrega = lugarEntrega::where("name",$request->name)->first();
+        $is_exist_lugar_entrega = lugarEntrega::where("address",$request->address)->first();
         if($is_exist_lugar_entrega){
             return response()->json([
                 "message" => 403,
-                "message_text" => "El nombre del lugar de entrega ya existe"
+                "message_text" => "la direccion del lugar de entrega ya existe"
             ],422);
         }
 
+        if (!empty($request->distrito)) {
+            $nombreDistritoRequest = $this->normalizeString($request->distrito);
+
+            $distrito = Distrito::all()->first(function ($item) use ($nombreDistritoRequest) {
+                return $this->normalizeString($item->name) === $nombreDistritoRequest;
+            });
+
+            if ($distrito) {
+                $request->merge(['distrito_id' => $distrito->id]);
+            }
+        }
+
         $lugar_entrega = lugarEntrega::create($request->all());
+        if ($lugar_entrega->distrito) {
+            $departamento = strtoupper($lugar_entrega->distrito->provincia->departamento->name);
+            $provincia = strtoupper($lugar_entrega->distrito->provincia->name);
+            $distrito = strtoupper($lugar_entrega->distrito->name);
+            $ubicacion = $departamento . '/' . $provincia . '/' . $distrito;
+        } else {
+            $ubicacion = 'SIN DISTRITO';
+        }
         return response()->json([
             "message" => 200,
             "lugarEntrega" => [
                 "id" => $lugar_entrega->id,
-                "name" => $lugar_entrega->name,
-                "address" => $lugar_entrega->address,
-                "state" => $lugar_entrega->state ?? 1,
-                "coordenadas" => $lugar_entrega->destination_coordinates,
+                "address" => $lugar_entrega->address.' - '.$ubicacion,
+                "latitud" => $lugar_entrega->latitud,
+                "longitud" => $lugar_entrega->longitud,
                 "created_at" => $lugar_entrega->created_at->format("Y-m-d h:i A")
             ]
         ]);
@@ -68,24 +87,43 @@ class lugarEntregaController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $is_exist_lugar_entrega = lugarEntrega::where("name",$request->name)->where("id","<>",$id)->first();
+        $is_exist_lugar_entrega = lugarEntrega::where("address",$request->address)->where("id","<>",$id)->first();
         if($is_exist_lugar_entrega){
             return response()->json([
                 "message" => 403,
-                "message_text" => "El nombre del lugar de entrega ya existe"
+                "message_text" => "la direccion del lugar de entrega ya existe"
             ],422);
+        }
+
+        if (!empty($request->distrito)) {
+            $nombreDistritoRequest = $this->normalizeString($request->distrito);
+
+            $distrito = Distrito::all()->first(function ($item) use ($nombreDistritoRequest) {
+                return $this->normalizeString($item->name) === $nombreDistritoRequest;
+            });
+
+            if ($distrito) {
+                $request->merge(['distrito_id' => $distrito->id]);
+            }
         }
 
         $lugar_entrega = lugarEntrega::findOrFail($id);
         $lugar_entrega->update($request->all());
+        if ($lugar_entrega->distrito) {
+            $departamento = strtoupper($lugar_entrega->distrito->provincia->departamento->name);
+            $provincia = strtoupper($lugar_entrega->distrito->provincia->name);
+            $distrito = strtoupper($lugar_entrega->distrito->name);
+            $ubicacion = $departamento . '/' . $provincia . '/' . $distrito;
+        } else {
+            $ubicacion = 'SIN DISTRITO';
+        }
         return response()->json([
             "message" => 200,
             "lugarEntrega" => [
                 "id" => $lugar_entrega->id,
-                "name" => $lugar_entrega->name,
-                "address" => $lugar_entrega->address,
-                "state" => $lugar_entrega->state,
-                "coordenadas" => $lugar_entrega->destination_coordinates,
+                "address" => $lugar_entrega->address.' - '.$ubicacion,
+                "latitud" => $lugar_entrega->latitud,
+                "longitud" => $lugar_entrega->longitud,
                 "created_at" => $lugar_entrega->created_at->format("Y-m-d h:i A")
             ]
         ]);
@@ -103,5 +141,14 @@ class lugarEntregaController extends Controller
         return response()->json([
             "message" => 200
         ]);
+    }
+
+    private function normalizeString($string)
+    {
+        $string = trim($string); // elimina espacios al inicio y fin
+        $string = strtolower($string); // convierte a minúsculas
+        $string = iconv('UTF-8', 'ASCII//TRANSLIT', $string); // elimina tildes
+        $string = preg_replace('/[^a-z0-9]/', '', $string); // elimina caracteres especiales (opcional)
+        return $string;
     }
 }
