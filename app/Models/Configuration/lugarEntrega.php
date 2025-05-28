@@ -20,6 +20,8 @@ class lugarEntrega extends Model
         "distrito_id",
         "latitud",
         "longitud",
+        "imagen",
+        "imagen_public_id",
     ];
 
     public function setCreatedAtAttribute($value){

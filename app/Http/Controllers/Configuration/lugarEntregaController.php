@@ -5,6 +5,7 @@ namespace App\Http\Controllers\configuration;
 use App\Http\Controllers\Controller;
 use App\Models\Configuration\Distrito;
 use App\Models\configuration\lugarEntrega;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Illuminate\Http\Request;
 
 class lugarEntregaController extends Controller
@@ -32,7 +33,10 @@ class lugarEntregaController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
+    {   
+        $request->validate([
+            'imagen_lugar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
         $is_exist_lugar_entrega = lugarEntrega::where("address",$request->address)->first();
         if($is_exist_lugar_entrega){
             return response()->json([
@@ -53,6 +57,22 @@ class lugarEntregaController extends Controller
             }
         }
 
+        if ($request->hasFile('imagen_lugar')) {
+            $mainImage = $request->file('imagen_lugar');
+
+            $uploadedFile = Cloudinary::upload($mainImage->getRealPath(), [
+                'folder' => 'LugarEntrega',
+            ]);
+            $imageUrl = $uploadedFile->getSecurePath();
+            $publicId = $uploadedFile->getPublicId();
+
+            // Agregar datos de imagen al request para crear el modelo
+            $request->merge([
+                'imagen' => $imageUrl,
+                'imagen_public_id' => $publicId
+            ]);
+        }
+
         $lugar_entrega = lugarEntrega::create($request->all());
         if ($lugar_entrega->distrito) {
             $departamento = strtoupper($lugar_entrega->distrito->provincia->departamento->name);
@@ -69,6 +89,7 @@ class lugarEntregaController extends Controller
                 "address" => $lugar_entrega->address.' - '.$ubicacion,
                 "latitud" => $lugar_entrega->latitud,
                 "longitud" => $lugar_entrega->longitud,
+                "imagen" => $lugar_entrega->imagen ?? null,
                 "created_at" => $lugar_entrega->created_at->format("Y-m-d h:i A")
             ]
         ]);
@@ -107,7 +128,29 @@ class lugarEntregaController extends Controller
             }
         }
 
-        $lugar_entrega = lugarEntrega::findOrFail($id);
+        $lugar_entrega = lugarEntrega::findOrFail($id); 
+
+        if ($request->hasFile('imagen_lugar')) {
+            $mainImage = $request->file('imagen_lugar');
+
+            // Eliminar imagen anterior si existe
+            if ($lugar_entrega->imagen_public_id) {
+                Cloudinary::destroy($lugar_entrega->imagen_public_id);
+            }
+
+            $uploadedFile = Cloudinary::upload($mainImage->getRealPath(), [
+                'folder' => 'LugarEntrega',
+            ]);
+            $imageUrl = $uploadedFile->getSecurePath();
+            $publicId = $uploadedFile->getPublicId();
+
+            // Agregar datos de imagen al request para crear el modelo
+            $request->merge([
+                'imagen' => $imageUrl,
+                'imagen_public_id' => $publicId
+            ]);
+        }
+
         $lugar_entrega->update($request->all());
         if ($lugar_entrega->distrito) {
             $departamento = strtoupper($lugar_entrega->distrito->provincia->departamento->name);
@@ -124,6 +167,7 @@ class lugarEntregaController extends Controller
                 "address" => $lugar_entrega->address.' - '.$ubicacion,
                 "latitud" => $lugar_entrega->latitud,
                 "longitud" => $lugar_entrega->longitud,
+                "imagen" => $lugar_entrega->imagen,
                 "created_at" => $lugar_entrega->created_at->format("Y-m-d h:i A")
             ]
         ]);

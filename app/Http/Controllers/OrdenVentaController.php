@@ -260,6 +260,7 @@ class OrdenVentaController extends Controller
                         : strtoupper(trim($l->address)),
                         'latitud' => $l->latitud,
                         'longitud' => $l->longitud,
+                        'imagen' => $l->imagen,
                     ]),
                 ];
             }),

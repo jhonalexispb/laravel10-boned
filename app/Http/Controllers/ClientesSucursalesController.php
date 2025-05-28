@@ -237,6 +237,8 @@ class ClientesSucursalesController extends Controller
                 'distrito_id' => $sucursal->distrito,
                 'latitud' => $request->latitud,
                 'longitud'=> $request->longitud,
+                'imagen' => isset($imageUrl) ? $imageUrl : null,
+                'imagen_public_id' => isset($imagePublicId) ? $imagePublicId : null,
             ]);
 
             if ($request->correo) {
@@ -511,6 +513,8 @@ class ClientesSucursalesController extends Controller
                     'distrito_id' => $sucursal->distrito,
                     'latitud' => $request->latitud,
                     'longitud'=> $request->longitud,
+                    'imagen' => isset($imageUrl) ? $imageUrl : $sucursal->image,
+                    'imagen_public_id' => isset($imagePublicId) ? $imagePublicId : $sucursal->image_public_id,
                 ]);
             }
 
