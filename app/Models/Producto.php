@@ -223,6 +223,24 @@ class Producto extends Model
         }
     }
 
+    public function actualizarEstadoManejoEscalas()
+    {
+        $escalasActivas = $this->get_escalas()->where('state', 1)->count();
+
+        if ($escalasActivas === 0 && $this->maneja_escalas) {
+            $this->maneja_escalas = 0;
+            $this->save();
+        } elseif ($escalasActivas > 0 && !$this->maneja_escalas) {
+            $this->maneja_escalas = 1;
+            $this->save();
+        }
+
+        return [
+            'escalas_activas' => $escalasActivas,
+            'escalas_inactivas' => $this->get_escalas()->where('state', 0)->count(),
+        ];
+    }
+
     
 
 

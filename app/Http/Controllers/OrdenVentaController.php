@@ -82,6 +82,7 @@ class OrdenVentaController extends Controller
         return response()->json([
             "productos" => $query->with([
                                         'get_laboratorio', 
+                                        'get_escalas'
                                     ])
                                     ->where('state',1)
                                     ->where('stock_vendedor','>',0)
@@ -98,7 +99,7 @@ class OrdenVentaController extends Controller
                     "pventa" => $p->pventa ?? '0.0',
                     "stock" => $p->stock_vendedor ?? '0',
                     "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
-                    "maneja_escalas" => $p->maneja_escalas,
+                    "maneja_escalas" => $p->maneja_escalas && $p->get_escalas->where('state', 1)->count() > 0,
                 ];
             }) ?? collect(),
         ]);
@@ -266,6 +267,7 @@ class OrdenVentaController extends Controller
             }),
             "productos" => Producto::with([
                                         'get_laboratorio', 
+                                        'get_escalas'
                                     ])
                                     ->where('state',1)
                                     ->where('stock_vendedor','>',0)
@@ -282,7 +284,7 @@ class OrdenVentaController extends Controller
                     "pventa" => $p->pventa ?? '0.0',
                     "stock" => $p->stock_vendedor ?? '0',
                     "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
-                    "maneja_escalas" => $p->maneja_escalas,
+                    "maneja_escalas" => $p->maneja_escalas && $p->get_escalas->where('state', 1)->count() > 0,
                 ];
             }) ?? collect(),
             'movimiento' => $movimientos?->map(function ($p) {
@@ -294,7 +296,7 @@ class OrdenVentaController extends Controller
                         "color_laboratorio" => $p->producto->get_laboratorio->color,
                         "nombre" => $p->producto->nombre,
                         "caracteristicas" => $p->producto->caracteristicas,
-                        "pventa" => $p->producto->pventa ?? '0.0',
+                        "pventa" => $p->pventa ?? '0.0',
                         "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
                         "lote" => $p->lote->lote ?? 'SIN LOTE',
                         "fecha_vencimiento" => $p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV',

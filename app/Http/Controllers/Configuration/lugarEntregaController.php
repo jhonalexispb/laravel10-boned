@@ -35,7 +35,7 @@ class lugarEntregaController extends Controller
     public function store(Request $request)
     {   
         $request->validate([
-            'imagen_lugar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'imagen_lugar' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
         $is_exist_lugar_entrega = lugarEntrega::where("address",$request->address)->first();
         if($is_exist_lugar_entrega){

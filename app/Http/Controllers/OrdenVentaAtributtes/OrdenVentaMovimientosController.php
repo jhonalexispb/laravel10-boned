@@ -77,7 +77,7 @@ class OrdenVentaMovimientosController extends Controller
                     'lote_id' => $lote->id,
                     'cantidad' => $extraer,
                     'pventa' => $pventa,
-                    'total' => $producto->pventa * $extraer,
+                    'total' => $pventa * $extraer,
                 ]);
 
                 $lote->cantidad_vendedor -= $extraer;
@@ -122,7 +122,7 @@ class OrdenVentaMovimientosController extends Controller
                     "color_laboratorio" => $p->producto->get_laboratorio->color,
                     "nombre" => $p->producto->nombre,
                     "caracteristicas" => $p->producto->caracteristicas,
-                    "pventa" => $p->producto->pventa ?? '0.0',
+                    "pventa" => $p->pventa ?? '0.0',
                     "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
                     "lote" => $p->lote->lote ?? 'SIN LOTE',
                     "fecha_vencimiento" => $p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV',
@@ -226,7 +226,7 @@ class OrdenVentaMovimientosController extends Controller
                     'lote_id' => $lote->id,
                     'cantidad' => $extraer,
                     'pventa' => $pventa,
-                    'total' => $producto->pventa * $extraer,
+                    'total' => $pventa * $extraer,
                 ]);
 
                 $lote->cantidad_vendedor -= $extraer;
@@ -271,7 +271,7 @@ class OrdenVentaMovimientosController extends Controller
                         "color_laboratorio" => $p->producto->get_laboratorio->color,
                         "nombre" => $p->producto->nombre,
                         "caracteristicas" => $p->producto->caracteristicas,
-                        "pventa" => $p->producto->pventa ?? '0.0',
+                        "pventa" => $p->pventa ?? '0.0',
                         "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
                         "lote" => $p->lote->lote ?? 'SIN LOTE',
                         "fecha_vencimiento" => $p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV',

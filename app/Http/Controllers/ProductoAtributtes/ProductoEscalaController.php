@@ -257,10 +257,12 @@ class ProductoEscalaController extends Controller
         // Eliminar la escala
         $escala->delete();
 
+        $estadisticas = $producto->actualizarEstadoManejoEscalas();
+
         return response()->json([
             'message' => 'Escala eliminada con éxito',
-            "escalas_activas" => $producto->get_escalas()->where('state', 1)->count(),
-            "escalas_inactivas" => $producto->get_escalas()->where('state', 0)->count(),
+            'escalas_activas' => $estadisticas['escalas_activas'],
+            'escalas_inactivas' => $estadisticas['escalas_inactivas'],
         ]);
     }
 
@@ -272,10 +274,11 @@ class ProductoEscalaController extends Controller
         $producto = Producto::findOrFail($id);
         $escala = $producto->get_escalas()->findOrFail($escalaId);  // Buscar la escala
 
-        // Eliminar la escala
         $escala->update([
             'state' => $request->state
         ]);
+
+        $estadisticas = $producto->actualizarEstadoManejoEscalas();
 
         return response()->json([
             "escala" => [
@@ -285,8 +288,8 @@ class ProductoEscalaController extends Controller
                 "state" => $escala->state,
             ],
 
-            "escalas_activas" => $producto->get_escalas()->where('state', 1)->count(),
-            "escalas_inactivas" => $producto->get_escalas()->where('state', 0)->count(),
+            'escalas_activas' => $estadisticas['escalas_activas'],
+            'escalas_inactivas' => $estadisticas['escalas_inactivas'],
         ]);
     }
 
@@ -308,8 +311,7 @@ class ProductoEscalaController extends Controller
         });
 
         // Contar las escalas activas e inactivas después de la actualización
-        $escalas_activas = $producto->get_escalas()->where('state', 1)->count();
-        $escalas_inactivas = $producto->get_escalas()->where('state', 0)->count();
+        $estadisticas = $producto->actualizarEstadoManejoEscalas();
 
         $escalas = $producto->get_escalas()->orderBy('cantidad','asc')->get();
 
@@ -322,8 +324,8 @@ class ProductoEscalaController extends Controller
                         "state" => $b->state,
                     ];
                 }),
-            "escalas_activas" => $escalas_activas,
-            "escalas_inactivas" => $escalas_inactivas,
+            "escalas_activas" => $estadisticas['escalas_activas'],
+            "escalas_inactivas" => $estadisticas['escalas_inactivas'],
         ]);
     }
 }
