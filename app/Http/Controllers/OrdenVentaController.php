@@ -71,22 +71,53 @@ class OrdenVentaController extends Controller
         $request->validate([
             'laboratorio_id' => 'nullable|array',
             'laboratorio_id.*' => 'exists:laboratorio,id',
+            'orden_productos_ids' => 'nullable|array',
+            'orden_productos_ids.*' => 'integer',
         ]);
 
-        $query = Producto::query();
+        $laboratorioIds = $request->laboratorio_id ?? [];
+        $ordenProductosIds = $request->orden_productos_ids ?? [];
 
-        if (!empty($request->laboratorio_id)) {
-            $query->whereIn('laboratorio_id', $request->laboratorio_id);
+        $queryBase = Producto::query();
+
+        if (!empty($laboratorioIds)) {
+            $queryBase->whereIn('laboratorio_id', $laboratorioIds);
         }
 
+        // Productos con stock > 0
+        $productosConStock = (clone $queryBase)
+            ->with([
+                'get_laboratorio', 
+                'get_escalas' => function ($q) {
+                    $q->where('state', 1);
+                }
+            ])
+            ->where('state', 1)
+            ->where('stock_vendedor', '>', 0)
+            ->get();
+
+        // Productos en orden con stock = 0 (que no estén en la lista anterior)
+        $productosEnOrdenSinStock = collect();
+
+        if (!empty($ordenProductosIds)) {
+            $productosEnOrdenSinStock = (clone $queryBase)
+                ->with([
+                    'get_laboratorio', 
+                    'get_escalas' => function ($q) {
+                        $q->where('state', 1);
+                    }
+                ])
+                ->where('state', 1)
+                ->where('stock_vendedor', '<=', 0)
+                ->whereIn('id', $ordenProductosIds)
+                ->get();
+        }
+
+        // Unir ambos resultados, evitando duplicados (por id)
+        $productos = $productosConStock->keyBy('id')->union($productosEnOrdenSinStock->keyBy('id'))->values();
+
         return response()->json([
-            "productos" => $query->with([
-                                        'get_laboratorio', 
-                                        'get_escalas'
-                                    ])
-                                    ->where('state',1)
-                                    ->where('stock_vendedor','>',0)
-                                    ->get()->map(function ($p) {
+            "productos" => $productos->map(function ($p) {
                 return [
                     "id" => $p->id,
                     "sku" => $p->sku,
@@ -100,10 +131,16 @@ class OrdenVentaController extends Controller
                     "stock" => $p->stock_vendedor ?? '0',
                     "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
                     "maneja_escalas" => $p->maneja_escalas && $p->get_escalas->where('state', 1)->count() > 0,
+                    "escalas" => $p->maneja_escalas ? $p->get_escalas->map(function ($e) {
+                        return [
+                            "precio" => $e->precio,
+                            "cantidad" => $e->cantidad,
+                        ];
+                    }) : [],
                 ];
             }) ?? collect(),
         ]);
-    }  
+    } 
     
     public function getProductDetail(String $id)
     {
@@ -211,6 +248,47 @@ class OrdenVentaController extends Controller
             $cliente = $orden_venta->cliente_id;
         }
 
+        $productosEnOrden = collect();
+        if (!$crearOrdenVenta && isset($orden_venta)) {
+            $productosEnOrden = $orden_venta->detalles->pluck('producto_id');
+        }
+
+        $productos = Producto::with([
+            'get_laboratorio', 
+            'get_escalas' => function ($q) {
+                $q->where('state', 1);
+            }
+        ])
+        ->where('state', 1)
+        ->where(function ($q) use ($productosEnOrden) {
+            $q->where('stock_vendedor', '>', 0);
+            if ($productosEnOrden->isNotEmpty()) {
+                $q->orWhereIn('id', $productosEnOrden);
+            }
+        })
+        ->get()->map(function ($p) {
+            return [
+                "id" => $p->id,
+                "sku" => $p->sku,
+                "laboratorio" => $p->get_laboratorio->name,
+                "laboratorio_id" => $p->laboratorio_id,
+                "color_laboratorio" => $p->get_laboratorio->color,
+                "nombre" => $p->nombre,
+                "caracteristicas" => $p->caracteristicas,
+                "nombre_completo" => $p->nombre . ' ' . $p->caracteristicas,
+                "pventa" => $p->pventa ?? '0.0',
+                "stock" => $p->stock_vendedor ?? '0',
+                "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
+                "maneja_escalas" => $p->maneja_escalas && $p->get_escalas->where('state', 1)->count() > 0,
+                "escalas" => $p->maneja_escalas ? $p->get_escalas->map(function ($e) {
+                    return [
+                        "precio" => $e->precio,
+                        "cantidad" => $e->cantidad,
+                    ];
+                }) : [],
+            ];
+        });
+
         return response()->json([
             'orden_venta_id' => $orden_venta_id,
             'codigo' => $codigo,
@@ -265,28 +343,9 @@ class OrdenVentaController extends Controller
                     ]),
                 ];
             }),
-            "productos" => Producto::with([
-                                        'get_laboratorio', 
-                                        'get_escalas'
-                                    ])
-                                    ->where('state',1)
-                                    ->where('stock_vendedor','>',0)
-                                    ->get()->map(function ($p) {
-                return [
-                    "id" => $p->id,
-                    "sku" => $p->sku,
-                    "laboratorio" => $p->get_laboratorio->name,
-                    "laboratorio_id" => $p->laboratorio_id,
-                    "color_laboratorio" => $p->get_laboratorio->color,
-                    "nombre" => $p->nombre,
-                    "caracteristicas" => $p->caracteristicas,
-                    "nombre_completo" => $p->nombre.' '.$p->caracteristicas,
-                    "pventa" => $p->pventa ?? '0.0',
-                    "stock" => $p->stock_vendedor ?? '0',
-                    "imagen" => $p->imagen ?? env("IMAGE_DEFAULT"),
-                    "maneja_escalas" => $p->maneja_escalas && $p->get_escalas->where('state', 1)->count() > 0,
-                ];
-            }) ?? collect(),
+
+            'productos' => $productos,
+
             'movimiento' => $movimientos?->map(function ($p) {
                      return [
                         "id" => $p->id,
