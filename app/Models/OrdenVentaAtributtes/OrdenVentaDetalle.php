@@ -23,6 +23,7 @@ class OrdenVentaDetalle extends Model implements Auditable
         'unit_id',
         'lote_id',
         'cantidad',
+        'tipo_promocion',
         'pventa',
         'total',
         'created_by',

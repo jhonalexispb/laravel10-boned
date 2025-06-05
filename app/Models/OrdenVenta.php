@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\ClienteSucursalAtributtes\ModoFacturacion;
+use App\Models\configuration\lugarEntrega;
 use App\Models\OrdenVentaAtributtes\ComprobanteOrdenVenta;
 use App\Models\OrdenVentaAtributtes\DocumentosTransporteOrdenVenta;
 use App\Models\OrdenVentaAtributtes\OrdenVentaDetalle;
@@ -43,6 +44,9 @@ class OrdenVenta extends Model implements Auditable
         "state_seguimiento",
         "fecha_corroboracion",
         "documento_transporte_id",
+        "guia_prestamo_id",
+        "modo_entrega",
+        "lugar_entrega_id",
         "created_by",
         "updated_by",
         "deleted_by",
@@ -69,15 +73,26 @@ class OrdenVenta extends Model implements Auditable
 
     public static function generarCodigo($usuario_id)
     {
-        $year = date('Y'); // Año actual
+        /* $year = date('Y');
         $prefijo = "OV-$usuario_id-$year-";
 
-        // Buscar la última orden con el mismo año
         $ultimaOrden = self::where('codigo', 'LIKE', "$prefijo%")
                            ->orderBy('codigo', 'desc')
                            ->first();
+        if ($ultimaOrden) {
+            $ultimoNumero = intval(substr($ultimaOrden->codigo, strlen($prefijo))) + 1;
+        } else {
+            $ultimoNumero = 1;
+        } */
 
-        // Si hay una orden previa, extraemos el número y sumamos 1
+        $year = date('Y'); // Año actual
+        $prefijo = "OV-$usuario_id-$year-";
+
+        // Buscar la última orden con el mismo año ordenando por el número final correctamente
+        $ultimaOrden = self::where('codigo', 'LIKE', "$prefijo%")
+                        ->orderByRaw("CAST(SUBSTRING(codigo, LENGTH(?) + 1) AS UNSIGNED) DESC", [$prefijo])
+                        ->first();
+
         if ($ultimaOrden) {
             $ultimoNumero = intval(substr($ultimaOrden->codigo, strlen($prefijo))) + 1;
         } else {
@@ -111,5 +126,15 @@ class OrdenVenta extends Model implements Auditable
     public function detalles()
     {
         return $this->hasMany(OrdenVentaDetalle::class, 'order_venta_id');
+    }
+
+    public function guia_prestamo()
+    {
+        return $this->belongsTo(GuiaPrestamo::class, "guia_prestamo_id");
+    }
+
+    public function lugar_entrega()
+    {
+        return $this->belongsTo(lugarEntrega::class, "lugar_entrega_id");
     }
 }

@@ -20,81 +20,23 @@ class OrdenVentaMovimientosController extends Controller
             'producto_id' => 'required|exists:productos,id',
             'cantidad' => 'required|integer|min:1',
         ]);
-    
+
         DB::beginTransaction();
-    
+
         try {
             $producto = Producto::where('id', $request->producto_id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-    
-            if ($producto->stock_vendedor < $request->cantidad) {
-            return response() -> json([
-                "message" => 403,
-                "message_text" => "no hay suficiente stock disponible del producto."
-            ],422);
-            }
-    
-            $cantidadRestante = (int) $request->cantidad;
-            $movimientos = [];
-
-            $pventa = $producto->pventa; // Precio por defecto
-
-            if ($producto->maneja_escalas) {
-                $escala = $producto->get_escalas()
-                    ->where('state', 1)
-                    ->orderBy('cantidad', 'asc')
-                    ->get()
-                    ->filter(fn($e) => $request->cantidad >= $e->cantidad)
-                    ->last(); // Escala más alta que se puede aplicar
-
-                if ($escala) {
-                    $pventa = $escala->precio;
-                }
-            }
-    
-            // Buscar lotes ordenados por: fecha_vencimiento asc, created_at asc, y los NULL al final
-            $lotes = ProductoLotes::where('producto_id', $request->producto_id)
-                ->where('cantidad_vendedor', '>', 0)
-                ->where('state',1)
-                ->orderByRaw("
-                    CASE WHEN fecha_vencimiento IS NULL THEN 1 ELSE 0 END,
-                    fecha_vencimiento ASC,
-                    created_at ASC
-                ")
                 ->lockForUpdate()
-                ->get();
+                ->firstOrFail();
 
-            foreach ($lotes as $lote) {
-                if ($cantidadRestante <= 0) break;
-
-                $extraer = min($cantidadRestante, $lote->cantidad_vendedor);
-
-                $movimientos[] = OrdenVentaDetalle::create([
-                    'order_venta_id' => $request->orden_venta_id,
-                    'producto_id' => $request->producto_id,
-                    'unit_id' => 1,
-                    'lote_id' => $lote->id,
-                    'cantidad' => $extraer,
-                    'pventa' => $pventa,
-                    'total' => $pventa * $extraer,
-                ]);
-
-                $lote->cantidad_vendedor -= $extraer;
-                $lote->save();
-
-                $cantidadRestante -= $extraer;
+            if ($producto->stock_vendedor < $request->cantidad) {
+                return response()->json([
+                    "message" => 403,
+                    "message_text" => "No hay suficiente stock disponible del producto."
+                ], 422);
             }
 
-            if ($cantidadRestante > 0) {
-                DB::rollBack();
-                return response() -> json([
-                "message" => 403,
-                "message_text" => "no hay suficiente stock distribuido en los lotes"
-            ],422);
-            }
-            
-    
+            $movimientos = $this->registrarMovimientosOrdenVenta($request->orden_venta_id, $producto, $request->cantidad);
+
             $producto->stock_vendedor -= $request->cantidad;
             $producto->actualizarEstadosStock();
             $producto->save();
@@ -104,34 +46,15 @@ class OrdenVentaMovimientosController extends Controller
             $orden->total += $totalOrdenVenta;
             $orden->save();
 
-    
             DB::commit();
-    
-            // Opcional: cargar relaciones para devolver detalle
+
             $detalles = OrdenVentaDetalle::with(['producto.get_laboratorio', 'lote'])
-            ->whereIn('id', collect($movimientos)->pluck('id'))
-            ->get();
-    
+                ->whereIn('id', collect($movimientos)->pluck('id'))
+                ->get();
+
             return response()->json([
-            'movimiento' => $detalles->map(function ($p) {
-                return [
-                    "id" => $p->id,
-                    "producto_id" => $p->producto_id,
-                    "sku" => $p->producto->sku,
-                    "laboratorio" => $p->producto->get_laboratorio->name,
-                    "color_laboratorio" => $p->producto->get_laboratorio->color,
-                    "nombre" => $p->producto->nombre,
-                    "caracteristicas" => $p->producto->caracteristicas,
-                    "pventa" => $p->pventa ?? '0.0',
-                    "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
-                    "lote" => $p->lote->lote ?? 'SIN LOTE',
-                    "fecha_vencimiento" => $p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV',
-                    "cantidad" => $p->cantidad,
-                    "total" => $p->total,
-                ];
-            })
-        ]);
-    
+                'movimiento' => $detalles->map(fn($p) => $this->formatearDetalle($p))
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -151,30 +74,25 @@ class OrdenVentaMovimientosController extends Controller
 
             $producto = Producto::findOrFail($producto_id);
             $stockActualEnVenta = OrdenVentaDetalle::where('producto_id', $producto_id)
-                                ->where('order_venta_id', $order_venta_id)
-                                ->sum('cantidad');
+                ->where('order_venta_id', $order_venta_id)
+                ->sum('cantidad');
 
             $stockDisponible = $producto->stock_vendedor + $stockActualEnVenta;
 
             if ($stockDisponible < $nuevaCantidad) {
                 $cantidadMaxima = $producto->stock_vendedor;
-                if ($cantidadMaxima == 0) {
-                    return response()->json([
-                        "message" => 403,
-                        "message_text" => "No más, no hay stock disponible del producto."
-                    ], 422);
-                } else {
-                    return response()->json([
-                        "message" => 403,
-                        "message_text" => "No hay suficiente stock disponible del producto. Solo puedes aumentar hasta $cantidadMaxima unidades."
-                    ], 422);
-                }
+                return response()->json([
+                    "message" => 403,
+                    "message_text" => $cantidadMaxima == 0
+                        ? "No hay stock disponible del producto."
+                        : "Solo puedes aumentar hasta $cantidadMaxima unidades."
+                ], 422);
             }
 
-            // 1. Revertir movimientos actuales
+            // Revertir movimientos actuales
             $movimientos = OrdenVentaDetalle::where('producto_id', $producto_id)
-                                            ->where('order_venta_id', $order_venta_id)
-                                            ->get();
+                ->where('order_venta_id', $order_venta_id)
+                ->get();
 
             foreach ($movimientos as $mov) {
                 $producto->stock_vendedor += $mov->cantidad;
@@ -184,103 +102,26 @@ class OrdenVentaMovimientosController extends Controller
                 $mov->delete();
             }
 
-            // 2. Reasignar lotes en orden de vencimiento
-            $cantidadRestante = (int) $request->cantidad;
-            $movimientos_creados = [];
+            // Reasignar lotes con la nueva cantidad
+            $movimientos_creados = $this->registrarMovimientosOrdenVenta($order_venta_id, $producto, $nuevaCantidad);
 
-            $pventa = $producto->pventa; // Precio por defecto
-
-            if ($producto->maneja_escalas) {
-                $escala = $producto->get_escalas()
-                    ->where('state', 1)
-                    ->orderBy('cantidad', 'asc')
-                    ->get()
-                    ->filter(fn($e) => $request->cantidad >= $e->cantidad)
-                    ->last(); // Escala más alta que se puede aplicar
-
-                if ($escala) {
-                    $pventa = $escala->precio;
-                }
-            }
-    
-            // Buscar lotes ordenados por: fecha_vencimiento asc, created_at asc, y los NULL al final
-            $lotes = ProductoLotes::where('producto_id', $request->producto_id)
-                ->where('cantidad_vendedor', '>', 0)
-                ->where('state',1)
-                ->orderByRaw("
-                    CASE WHEN fecha_vencimiento IS NULL THEN 1 ELSE 0 END,
-                    fecha_vencimiento ASC,
-                    created_at ASC
-                ")
-                ->get();
-
-            foreach ($lotes as $lote) {
-                if ($cantidadRestante <= 0) break;
-
-                $extraer = min($cantidadRestante, $lote->cantidad_vendedor);
-
-                $movimientos_creados[] = OrdenVentaDetalle::create([
-                    'order_venta_id' => $request->orden_venta_id,
-                    'producto_id' => $request->producto_id,
-                    'unit_id' => 1,
-                    'lote_id' => $lote->id,
-                    'cantidad' => $extraer,
-                    'pventa' => $pventa,
-                    'total' => $pventa * $extraer,
-                ]);
-
-                $lote->cantidad_vendedor -= $extraer;
-                $lote->save();
-
-                $cantidadRestante -= $extraer;
-            }
-
-            if ($cantidadRestante > 0) {
-                DB::rollBack();
-                return response() -> json([
-                "message" => 403,
-                "message_text" => "no hay suficiente stock distribuido en los lotes"
-            ],422);
-            }
-            
-    
-            $producto->stock_vendedor -= $request->cantidad;
+            $producto->stock_vendedor -= $nuevaCantidad;
             $producto->actualizarEstadosStock();
             $producto->save();
 
-            $orden = OrdenVenta::findOrFail($request->orden_venta_id);
-            $totalActual = OrdenVentaDetalle::where('order_venta_id', $request->orden_venta_id)->sum('total');
-            $orden->total = $totalActual;
+            $orden = OrdenVenta::findOrFail($order_venta_id);
+            $orden->total = OrdenVentaDetalle::where('order_venta_id', $order_venta_id)->sum('total');
             $orden->save();
 
-    
             DB::commit();
-    
-            // Opcional: cargar relaciones para devolver detalle
-            $detalles = OrdenVentaDetalle::with(['producto.get_laboratorio', 'lote'])
-            ->whereIn('id', collect($movimientos_creados)->pluck('id'))
-            ->get();
-    
-            return response()->json([
-                'movimiento' => $detalles->map(function ($p) {
-                    return [
-                        "id" => $p->id,
-                        "producto_id" => $p->producto_id,
-                        "sku" => $p->producto->sku,
-                        "laboratorio" => $p->producto->get_laboratorio->name,
-                        "color_laboratorio" => $p->producto->get_laboratorio->color,
-                        "nombre" => $p->producto->nombre,
-                        "caracteristicas" => $p->producto->caracteristicas,
-                        "pventa" => $p->pventa ?? '0.0',
-                        "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
-                        "lote" => $p->lote->lote ?? 'SIN LOTE',
-                        "fecha_vencimiento" => $p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV',
-                        "cantidad" => $p->cantidad,
-                        "total" => $p->total,
-                    ];
-                })
-            ]);
 
+            $detalles = OrdenVentaDetalle::with(['producto.get_laboratorio', 'lote'])
+                ->whereIn('id', collect($movimientos_creados)->pluck('id'))
+                ->get();
+
+            return response()->json([
+                'movimiento' => $detalles->map(fn($p) => $this->formatearDetalle($p))
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
@@ -333,5 +174,99 @@ class OrdenVentaMovimientosController extends Controller
                 'mensaje' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function calcularPrecioYPromocion(Producto $producto, int $cantidad): array
+    {
+        $pventa = $producto->pventa;
+        $tipo_promocion = null;
+
+        if ($producto->maneja_escalas) {
+            $escala = $producto->get_escalas()
+                ->where('state', 1)
+                ->orderBy('cantidad', 'asc')
+                ->get()
+                ->filter(fn($e) => $cantidad >= $e->cantidad)
+                ->last();
+
+            if ($escala) {
+                $pventa = $escala->precio;
+                $tipo_promocion = 1;
+            }
+        }
+
+        return [
+            'pventa' => $pventa,
+            'tipo_promocion' => $tipo_promocion
+        ];
+    }
+
+    private function registrarMovimientosOrdenVenta(int $orden_venta_id, Producto $producto, int $cantidad): array
+    {
+        $cantidadRestante = $cantidad;
+        $movimientos = [];
+
+        $precios = $this->calcularPrecioYPromocion($producto, $cantidad);
+        $pventa = $precios['pventa'];
+        $tipo_promocion = $precios['tipo_promocion'];
+
+        $lotes = ProductoLotes::where('producto_id', $producto->id)
+            ->where('cantidad_vendedor', '>', 0)
+            ->where('state', 1)
+            ->orderByRaw("
+                CASE WHEN fecha_vencimiento IS NULL THEN 1 ELSE 0 END,
+                fecha_vencimiento ASC,
+                created_at ASC
+            ")
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($lotes as $lote) {
+            if ($cantidadRestante <= 0) break;
+
+            $extraer = min($cantidadRestante, $lote->cantidad_vendedor);
+
+            $movimientos[] = OrdenVentaDetalle::create([
+                'order_venta_id' => $orden_venta_id,
+                'producto_id' => $producto->id,
+                'unit_id' => 1,
+                'lote_id' => $lote->id,
+                'cantidad' => $extraer,
+                'tipo_promocion' => $tipo_promocion,
+                'pventa' => $pventa,
+                'total' => $pventa * $extraer,
+            ]);
+
+            $lote->cantidad_vendedor -= $extraer;
+            $lote->save();
+
+            $cantidadRestante -= $extraer;
+        }
+
+        if ($cantidadRestante > 0) {
+            throw new \Exception("No hay suficiente stock distribuido en los lotes");
+        }
+
+        return $movimientos;
+    }
+
+    private function formatearDetalle($p): array
+    {
+        return [
+            "id" => $p->id,
+            "producto_id" => $p->producto_id,
+            "sku" => $p->producto->sku,
+            "laboratorio" => $p->producto->get_laboratorio->name,
+            "color_laboratorio" => $p->producto->get_laboratorio->color,
+            "nombre" => $p->producto->nombre,
+            "caracteristicas" => $p->producto->caracteristicas,
+            "pventa" => $p->pventa ?? '0.0',
+            "imagen" => $p->producto->imagen ?? env("IMAGE_DEFAULT"),
+            "lote" => $p->lote->lote ?? 'SIN LOTE',
+            "fecha_vencimiento" => $p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format('d-m-Y') : 'SIN FV',
+            "cantidad" => $p->cantidad,
+            "tipo_promocion" => $p->tipo_promocion,
+            "total" => $p->total,
+        ];
     }
 }

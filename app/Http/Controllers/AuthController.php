@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GuiaPrestamo;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -104,22 +106,67 @@ class AuthController extends Controller
      */
     protected function respondWithToken($token)
     {   
+        $user = auth("api")->user();
         $permissions = auth("api")->user()->getAllPermissions()->map(function($perm){
             return $perm -> name;
         });
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
             'expires_in' => auth('api')->factory()->getTTL() * 60,
             'user' => [
-                "name" => auth("api")->user()->name,
-                "gender" => auth("api")->user()->gender,
-                "full_name" => auth("api")->user()->name.' '.auth("api")->user()->surname,
-                "email" => auth("api")->user()->email,
-                "avatar" => auth('api')->user()->avatar ? env("APP_URL")."storage/".auth('api')->user()->avatar : 'https://cdn-icons-png.flaticon.com/512/18269/18269639.png',
-                "role_name" => auth('api')->user()->role->name,
+                "name" => $user->name,
+                "gender" => $user->gender,
+                "full_name" => $user->name . ' ' . $user->surname,
+                "email" => $user->email,
+                "avatar" => $user->avatar ? env("APP_URL") . "storage/" . $user->avatar : 'https://cdn-icons-png.flaticon.com/512/18269/18269639.png',
+                "role_name" => $user->role->name ?? null,
                 "permissions" => $permissions,
+                "guia_prestamo" => $this->getUserPayload($user)
             ]
         ]);
+    }
+
+    protected function getUserPayload($user)
+    {
+        $guiaPendiente = GuiaPrestamo::where('user_encargado_id', $user->id)
+            ->whereIn('state', [2, 3])
+            ->latest('created_at')
+            ->with('detalles.producto.get_laboratorio', 'detalles.lote')
+            ->first();
+
+        $detallesGuia = $guiaPendiente?->detalles;
+
+        return [
+            "codigo" => $guiaPendiente?->codigo,
+            "productos_guia_prestamo" => $detallesGuia?->map(function ($p) {
+                $producto = $p->producto;
+                if (!$producto) return null;
+
+                return [
+                    "id" => $producto->id,
+                    "sku" => $producto->sku,
+                    "laboratorio" => $producto->get_laboratorio->name ?? '',
+                    "laboratorio_id" => $producto->laboratorio_id,
+                    "color_laboratorio" => $producto->get_laboratorio->color ?? '',
+                    "nombre" => $producto->nombre,
+                    "caracteristicas" => $producto->caracteristicas,
+                    "nombre_completo" => $producto->nombre . ' ' . $producto->caracteristicas,
+                    "pventa" => $producto->pventa ?? '0.0',
+                    "stock" => $p->stock ?? '0',
+                    "imagen" => $producto->imagen ?? env("IMAGE_DEFAULT"),
+                    "lote" => $p->lote->lote ?? 'SIN LOTE',
+                    "fecha_vencimiento" => ' FV: ' . $p->lote->fecha_vencimiento ? Carbon::parse($p->lote->fecha_vencimiento)->format("d-m-Y") : 'SIN FECHA DE VENCIMIENTO',
+                    "maneja_escalas" => $producto->maneja_escalas && $producto->get_escalas->where('state', 1)->count() > 0,
+                    "escalas" => $producto->maneja_escalas
+                        ? $producto->get_escalas->where('state', 1)->map(fn($e) => [
+                            "precio" => $e->precio,
+                            "cantidad" => $e->cantidad,
+                        ])->values()
+                        : [],
+                ];
+            })->filter()->values() ?? collect(),
+        ];
     }
 }
