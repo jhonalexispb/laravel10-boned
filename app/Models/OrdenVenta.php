@@ -73,23 +73,12 @@ class OrdenVenta extends Model implements Auditable
 
     public static function generarCodigo($usuario_id)
     {
-        /* $year = date('Y');
-        $prefijo = "OV-$usuario_id-$year-";
-
-        $ultimaOrden = self::where('codigo', 'LIKE', "$prefijo%")
-                           ->orderBy('codigo', 'desc')
-                           ->first();
-        if ($ultimaOrden) {
-            $ultimoNumero = intval(substr($ultimaOrden->codigo, strlen($prefijo))) + 1;
-        } else {
-            $ultimoNumero = 1;
-        } */
-
         $year = date('Y'); // Año actual
         $prefijo = "OV-$usuario_id-$year-";
 
         // Buscar la última orden con el mismo año ordenando por el número final correctamente
-        $ultimaOrden = self::where('codigo', 'LIKE', "$prefijo%")
+        $ultimaOrden = self::withTrashed()
+                        ->where('codigo', 'LIKE', "$prefijo%")
                         ->orderByRaw("CAST(SUBSTRING(codigo, LENGTH(?) + 1) AS UNSIGNED) DESC", [$prefijo])
                         ->first();
 

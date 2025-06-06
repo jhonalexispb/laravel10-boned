@@ -3,14 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\OrdenVenta\OrdenVentaCollection;
+use App\Http\Resources\OrdenVenta\OrdenVentaResource;
 use App\Models\ClientesSucursales;
 use App\Models\configuration\lugarEntrega;
 use App\Models\GuiaPrestamo;
 use App\Models\OrdenVenta;
 use App\Models\OrdenVentaAtributtes\TransportesOrdenVenta;
 use App\Models\Producto;
+use App\Models\ProductoAtributtes\ProductoLotes;
 use Carbon\Carbon;
+use DB;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\PDF;
 
 class OrdenVentaController extends Controller
 {
@@ -409,6 +413,48 @@ class OrdenVentaController extends Controller
         ]);
     }
 
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $orden = OrdenVenta::with('detalles')->findOrFail($id);
+
+            foreach ($orden->detalles as $mov) {
+                $producto = Producto::findOrFail($mov->producto_id);
+
+                // Devolver stock al producto
+                $producto->stock_vendedor += $mov->cantidad;
+
+                // Devolver stock al lote
+                $lote = ProductoLotes::findOrFail($mov->lote_id);
+                $lote->cantidad_vendedor += $mov->cantidad;
+                $lote->save();
+
+                // Eliminar el detalle
+                $mov->delete();
+
+                // Actualizar estados de stock del producto
+                $producto->actualizarEstadosStock();
+                $producto->save();
+            }
+
+            $orden->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'orden eliminada y mercadería devuelta correctamente'
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'error' => 'Error al eliminar la orden: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function verificarGuiaPrestamoPendiente()
     {
         $user = auth()->user();
@@ -431,5 +477,39 @@ class OrdenVentaController extends Controller
         return response()->json([
             'tiene_guia_prestamo_pendiente' => false,
         ]);
+    }
+
+    public function change_state(Request $request, $id){
+        $request->validate([
+            'state' => 'required|in:0,1',
+        ]);
+
+        $ordenCompra = OrdenVenta::findOrFail($id);
+
+        if($request->state == 1){
+            $date = Carbon::now();
+        }else{
+            $date = null;
+        }
+
+        $ordenCompra->update([
+            'state_orden' => $request->state,
+            'fecha_envio' => $date
+        ]);
+
+        $message = $request->state == 1 
+        ? 'orden de venta aprobada correctamente' 
+        : 'orden de venta revertida, ya no está aprobada';
+
+        return response()->json([
+            'message' => $message,
+            'order_venta' => new OrdenVentaResource($ordenCompra),
+        ], 200);
+    }
+
+    public function orden_venta_pdf($id){
+        $orden = OrdenVenta::findOrFail($id);
+        $pdf = PDF::loadView('orden_venta.orden_venta_pdf',compact('orden'));
+        return $pdf->stream("ORDEN_VENTA_".$orden->codigo.'-'.uniqid().'.pdf');
     }
 }
